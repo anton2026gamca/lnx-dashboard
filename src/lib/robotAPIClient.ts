@@ -3,12 +3,11 @@
  */
 
 import io, { Socket } from 'socket.io-client';
-import { RobotConnection, SensorData, RobotState, RobotMode } from '@/types/robot';
+import { RobotConnection, RobotMode, SensorData, MotorSettings, GoalSettings, AutonomousSettings, LogEntry, LogsBatch, DetectedObject } from '@/types/robot';
 
 export class RobotAPIClient {
   private socket: Socket | null = null;
   private robot: RobotConnection | null = null;
-  private reconnectAttempts = 0;
   private maxReconnectAttempts = 5;
   private reconnectDelay = 2000;
 
@@ -31,7 +30,6 @@ export class RobotAPIClient {
         this.robot = robot;
 
         this.socket.on('connect', () => {
-          this.reconnectAttempts = 0;
           resolve();
         });
 
@@ -95,24 +93,32 @@ export class RobotAPIClient {
   }
 
   /**
+   * Get logs
+   */
+  async getLogs(since: number = 0): Promise<LogsBatch> {
+    return this._emit('get_logs', { since });
+  }
+
+  /**
    * Get motor settings
    */
-  async getMotorSettings(): Promise<Record<string, boolean>> {
+  async getMotorSettings(): Promise<MotorSettings> {
     return this._emit('get_motor_settings', {});
   }
 
   /**
    * Get goal settings
    */
-  async getGoalSettings(): Promise<any> {
+  async getGoalSettings(): Promise<GoalSettings> {
     return this._emit('get_goal_settings', {});
   }
 
   /**
-   * Get logs
+   * Get autonomous mode settings
    */
-  async getLogs(since: number = 0): Promise<any> {
-    return this._emit('get_logs', { since });
+  async getAutonomousSettings(): Promise<AutonomousSettings> {
+    const response = await this._emit('get_autonomous_settings', {});
+    return response.current_state_machine || null;
   }
 
   /**
@@ -124,17 +130,9 @@ export class RobotAPIClient {
   }
 
   /**
-   * Get current state machine
-   */
-  async getStateMachine(): Promise<string | null> {
-    const response = await this._emit('get_state_machine', {});
-    return response.current_state_machine || null;
-  }
-
-  /**
    * Get detected objects
    */
-  async getDetections(): Promise<any[]> {
+  async getDetections(): Promise<DetectedObject[]> {
     const response = await this._emit('get_detections', {});
     return response.detections || [];
   }
@@ -165,22 +163,22 @@ export class RobotAPIClient {
   /**
    * Set motor settings
    */
-  async setMotorSettings(settings: Record<string, boolean>): Promise<void> {
+  async setMotorSettings(settings: MotorSettings): Promise<void> {
     await this._emit('set_motor_settings', settings);
   }
 
   /**
    * Set goal settings
    */
-  async setGoalSettings(settings: any): Promise<void> {
+  async setGoalSettings(settings: GoalSettings): Promise<void> {
     await this._emit('set_goal_settings', settings);
   }
 
   /**
-   * Set state machine
+   * Set autonomous mode settings
    */
-  async setStateMachine(name: string): Promise<void> {
-    await this._emit('set_state_machine', { name });
+  async setAutonomousSettings(settings: AutonomousSettings): Promise<void> {
+    await this._emit('set_autonomous_settings', { settings });
   }
 
   /**

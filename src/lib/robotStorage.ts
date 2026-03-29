@@ -81,6 +81,6 @@ export const robotStorage = {
    * Generate a new robot ID
    */
   generateId(): string {
-    return `robot_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    return `${Date.now()}${Math.random().toString(16).slice(2)}`;
   },
 };
