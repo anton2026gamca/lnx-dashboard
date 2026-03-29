@@ -7,7 +7,7 @@
 import { useEffect, useCallback, useState } from 'react';
 import { robotClient } from '@/lib/robotAPIClient';
 import { useRobot } from '@/context/RobotContext';
-import { SensorData, RobotMode } from '@/types/robot';
+import { SensorData, RobotMode, LogEntry, DetectedObject } from '@/types/robot';
 
 /**
  * Hook to fetch sensor data periodically
@@ -117,7 +117,7 @@ export const useTargetGoal = () => {
 
   useEffect(() => {
     fetchTargetGoal();
-    const timer = setInterval(fetchTargetGoal, 5000); // Refresh every 5 seconds
+    const timer = setInterval(fetchTargetGoal, 5000);
     return () => clearInterval(timer);
   }, [fetchTargetGoal]);
   
@@ -172,14 +172,12 @@ export const useFrameDataUrl = (frame: Uint8Array | null) => {
       return;
     }
 
-    const blob = new Blob([frame], { type: 'image/jpeg' });
+    const blob = new Blob([new Uint8Array(frame)], { type: 'image/jpeg' });
     const url = URL.createObjectURL(blob);
     setDataUrl(url);
 
     return () => URL.revokeObjectURL(url);
-  }, [frame]);
-
-  return dataUrl;
+  }, [frame]);  return dataUrl;
 };
 
 /**
@@ -208,4 +206,52 @@ export const useManualControl = () => {
   );
 
   return { sendControl, isLoading, error };
+};
+
+/**
+ * Hook to subscribe to real-time updates
+ * Uses Socket.IO event listeners instead of polling for more efficient updates
+ */
+export const useUpdateSubscriptions = () => {
+  const { connectionState } = useRobot();
+  const [sensorUpdates, setSensorUpdates] = useState<SensorData | null>(null);
+  const [logsUpdates, setLogsUpdates] = useState<LogEntry[]>([]);
+  const [detectionUpdates, setDetectionUpdates] = useState<DetectedObject[]>([]);
+
+  useEffect(() => {
+    if (!connectionState.isConnected) {
+      setSensorUpdates(null);
+      setLogsUpdates([]);
+      setDetectionUpdates([]);
+      return;
+    }
+
+    const handleSensorUpdate = (data: SensorData) => {
+      setSensorUpdates(data);
+    };
+
+    const handleLogUpdate = (entry: LogEntry) => {
+      setLogsUpdates((prev) => [...prev, entry].slice(-100));
+    };
+
+    const handleDetectionUpdate = (detections: DetectedObject[]) => {
+      setDetectionUpdates(detections);
+    };
+
+    robotClient.on('sensor_update', handleSensorUpdate);
+    robotClient.on('log_entry', handleLogUpdate);
+    robotClient.on('detections_update', handleDetectionUpdate);
+
+    robotClient.on('connect', () => {
+      robotClient.on('sensor_update', handleSensorUpdate);
+    });
+
+    return () => {
+      robotClient.off('sensor_update', handleSensorUpdate);
+      robotClient.off('log_entry', handleLogUpdate);
+      robotClient.off('detections_update', handleDetectionUpdate);
+    };
+  }, [connectionState.isConnected]);
+
+  return { sensorUpdates, logsUpdates, detectionUpdates };
 };

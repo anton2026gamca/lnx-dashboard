@@ -4,9 +4,9 @@
 
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useRobot } from '@/context/RobotContext';
-import { useSensorData, useVideoStream, useFrameDataUrl } from '@/hooks/useRobot';
+import { useSensorData, useVideoStream, useFrameDataUrl, useUpdateSubscriptions, useTargetGoal } from '@/hooks/useRobot';
 import { formatSensorData } from '@/lib/robotUtils';
 import { robotClient } from '@/lib/robotAPIClient';
 
@@ -32,7 +32,7 @@ interface SensorPropertyProps {
 }
 
 const SensorProperty: React.FC<SensorPropertyProps> = ({ label, value }) => (
-  <div className="flex-1 flex flex-col items-center justify-center outline-2 outline-dashed dark:outline-main-700 hover:dark:outline-main-600 text-xs p-0.5">
+  <div className="flex-1 flex w-full flex-col items-center justify-center outline-2 outline-dashed dark:outline-main-700 hover:dark:outline-main-600 text-xs py-0.5 px-2">
     {label}
     <div className="text-green-500">{value}</div>
   </div>
@@ -170,63 +170,326 @@ const AngleIndicator: React.FC<AngleIndicatorProps> = ({ angle, enabled }) => (
 interface FieldVisualizerProps {
   robotX: number | null;
   robotY: number | null;
+  robotHeading: number | null;
   confidence: string;
+  targetGoal: 'yellow' | 'blue' | null;
+  irBallAngle: number | null;
+  irBallDistance: number | null;
+  irBallDetected: boolean;
+  camBallAngle: number | null;
+  camBallDistance: number | null;
+  camBallDetected: boolean;
 }
 
-const FieldVisualizer: React.FC<FieldVisualizerProps> = ({ robotX, robotY, confidence }) => {
-  // TODO: Rotate field based on target goal (target goal is up, the position is relative to target goal center)
-  // TODO: Add robot orientation if available
-  // TODO: Add detected ball position if available (if camera detected), add detected ball angle if available (if IR detected)
-  // TODO: Add field markings (edge lines, goal lines) if possible, follow [official field specs](https://robocup-junior.github.io/soccer-rules/master/field_specification.html)
-  // TODO: Resize field to fit container while maintaining aspect ratio
-  const FIELD_WIDTH = 2190;  // mm
-  const FIELD_HEIGHT = 1580; // mm
-  const GOAL_WIDTH = 600;    // mm
-  const GOAL_THICKNESS = 10; // px
-  const SCALE = 0.08;        // pixels per mm
+const FieldVisualizer: React.FC<FieldVisualizerProps> = ({
+  robotX,
+  robotY,
+  robotHeading,
+  confidence,
+  targetGoal,
+  irBallAngle,
+  irBallDistance,
+  irBallDetected,
+  camBallAngle,
+  camBallDistance,
+  camBallDetected,
+}) => {
+  // Field dimensions from official RoboCup Junior specs (mm)
+  const FIELD_WIDTH = 1580;
+  const FIELD_HEIGHT = 2190;
+  const GOAL_WIDTH = 600;
+  const GOAL_AREA_DEPTH = 250;
+  const GOAL_AREA_WIDTH = 800;
   
-  const displayWidth = FIELD_WIDTH * SCALE;
-  const displayHeight = FIELD_HEIGHT * SCALE;
-  const robotPixelX = robotX ? robotX * SCALE : null;
-  const robotPixelY = robotY ? robotY * SCALE : null;
-
-  const goalSize = GOAL_WIDTH * SCALE;
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [scale, setScale] = useState(0.12); // pixels per mm
+  
+  useEffect(() => {
+    const updateScale = () => {
+      if (containerRef.current) {
+        const maxWidth = containerRef.current.clientWidth - 4;
+        const maxHeight = containerRef.current.clientHeight - 40;
+        const scaleWidth = maxWidth / FIELD_WIDTH;
+        const scaleHeight = maxHeight / FIELD_HEIGHT;
+        setScale(Math.min(scaleWidth, scaleHeight));
+      }
+    };
+    
+    updateScale();
+    const resizeObserver = new ResizeObserver(updateScale);
+    if (containerRef.current) {
+      resizeObserver.observe(containerRef.current);
+    }
+    
+    return () => resizeObserver.disconnect();
+  }, []);
+  
+  const displayWidth = FIELD_WIDTH * scale;
+  const displayHeight = FIELD_HEIGHT * scale;
+  
+  const rotationAngle = targetGoal === 'yellow' ? 180 : 0;
+  
+  const transformCoordinates = (x: number, y: number, rotation: number) => {
+    const rad = (rotation * Math.PI) / 180;
+    const cos = Math.cos(rad);
+    const sin = Math.sin(rad);
+    return {
+      x: x * cos - y * sin,
+      y: x * sin + y * cos,
+    };
+  };
+  
+  let robotPixelX: number | null = null;
+  let robotPixelY: number | null = null;
+  
+  if (robotX !== null && robotY !== null) {
+    const transformed = transformCoordinates(robotX, robotY, rotationAngle);
+    robotPixelX = displayWidth / 2 + transformed.x * scale;
+    robotPixelY = displayHeight / 2 + transformed.y * scale;
+  }
+  
+  let ballPixelX: number | null = null;
+  let ballPixelY: number | null = null;
+  let ballSource: 'ir' | 'camera' | null = null;
+  
+  if (robotX !== null && robotY !== null) {
+    if (irBallDetected && irBallAngle !== null && irBallDistance !== null && irBallDistance > 0) {
+      const irAngleRad = ((irBallAngle + (robotHeading || 0)) * Math.PI) / 180;
+      const ballX = robotX + irBallDistance * Math.cos(irAngleRad);
+      const ballY = robotY + irBallDistance * Math.sin(irAngleRad);
+      const transformed = transformCoordinates(ballX, ballY, rotationAngle);
+      ballPixelX = displayWidth / 2 + transformed.x * scale;
+      ballPixelY = displayHeight / 2 + transformed.y * scale;
+      ballSource = 'ir';
+    } else if (camBallDetected && camBallAngle !== null && camBallDistance !== null && camBallDistance > 0) {
+      const camAngleRad = ((camBallAngle + (robotHeading || 0)) * Math.PI) / 180;
+      const ballX = robotX + camBallDistance * Math.cos(camAngleRad);
+      const ballY = robotY + camBallDistance * Math.sin(camAngleRad);
+      const transformed = transformCoordinates(ballX, ballY, rotationAngle);
+      ballPixelX = displayWidth / 2 + transformed.x * scale;
+      ballPixelY = displayHeight / 2 + transformed.y * scale;
+      ballSource = 'camera';
+    }
+  }
 
   return (
-    <div className="flex flex-col gap-2 items-center w-full">
-      <div 
-        className="relative bg-green-900 border-2 border-white dark:border-main-600 rounded"
-        style={{ width: `${displayWidth}px`, height: `${displayHeight}px` }}
-      >
-        {/* Yellow goal (left) */}
-        <div 
-          className="absolute w-4 h-3 bg-yellow-400 border border-yellow-600"
-          style={{ left: `0px`, top: `${displayHeight / 2 - goalSize / 2}px`, width: `${GOAL_THICKNESS}px`, height: `${goalSize}px` }}
-          title="Yellow Goal"
-        />
-        
-        {/* Blue goal (right) */}
-        <div 
-          className="absolute w-4 h-3 bg-blue-500 border border-blue-700"
-          style={{ right: `0px`, top: `${displayHeight / 2 - goalSize / 2}px`, width: `${GOAL_THICKNESS}px`, height: `${goalSize}px` }}
-          title="Blue Goal"
-        />
-        
-        {/* Robot position */}
-        {robotPixelX !== null && robotPixelY !== null ? (
-          <div 
-            className="absolute w-3 h-3 bg-red-500 rounded-full border border-red-700 transform -translate-x-1/2 -translate-y-1/2"
-            style={{ left: `${robotPixelX}px`, top: `${robotPixelY}px` }}
-            title={`Robot: ${robotX?.toFixed(0)}mm, ${robotY?.toFixed(0)}mm`}
-          />
-        ) : (
-          <div className="absolute inset-0 flex items-center justify-center text-xs text-white">
-            No Position
-          </div>
-        )}
+    <div className="flex items-center justify-center">
+      <div className="flex flex-col gap-2 items-center justify-center break-keep text-xs text-main-600 dark:text-main-400 text-nowrap">
+        <SensorProperty label="Target Goal" value={targetGoal ? targetGoal.toUpperCase() : 'N/A'} />
+        <SensorProperty label="X (mm)" value={robotX !== null ? robotX.toFixed(0) : '---'} />
+        <SensorProperty label="Y (mm)" value={robotY !== null ? robotY.toFixed(0) : '---'} />
       </div>
-      <div className="text-xs text-main-600 dark:text-main-400">
-        Confidence: {confidence}
+
+      <div className="flex flex-col gap-2 items-center w-full h-full" ref={containerRef}>
+        <div 
+          className="relative bg-green-600 border-2 border-white dark:border-main-600 rounded overflow-hidden flex-1 flex items-center justify-center"
+          style={{
+            height: `${displayHeight}px`,
+            minHeight: '300px',
+            aspectRatio: `${displayWidth} / ${displayHeight}`,
+          }}
+        >
+          <svg
+            viewBox={`-1 -1 ${displayWidth + 2} ${displayHeight + 2}`}
+            style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
+          >
+            {/* Field boundary */}
+            <rect
+              x={0}
+              y={0}
+              width={displayWidth}
+              height={displayHeight}
+              fill="#16a34a"
+              stroke="white"
+              strokeWidth={2}
+            />
+            
+            {/* Center circle */}
+            <circle
+              cx={displayWidth / 2}
+              cy={displayHeight / 2}
+              r={(300 * scale)}
+              fill="none"
+              stroke="white"
+              strokeWidth={1}
+            />
+            
+            {/* Goal areas - top (target when blue) */}
+            <rect
+              x={(displayWidth - GOAL_AREA_WIDTH * scale) / 2}
+              y={0}
+              width={GOAL_AREA_WIDTH * scale}
+              height={GOAL_AREA_DEPTH * scale}
+              fill="none"
+              stroke="white"
+              strokeWidth={1}
+            />
+            
+            {/* Goal areas - bottom (target when yellow) */}
+            <rect
+              x={(displayWidth - GOAL_AREA_WIDTH * scale) / 2}
+              y={displayHeight - GOAL_AREA_DEPTH * scale}
+              width={GOAL_AREA_WIDTH * scale}
+              height={GOAL_AREA_DEPTH * scale}
+              fill="none"
+              stroke="white"
+              strokeWidth={1}
+            />
+            
+            {/* Blue goal (top) */}
+            <rect
+              x={(displayWidth - GOAL_WIDTH * scale) / 2}
+              y={0}
+              width={GOAL_WIDTH * scale}
+              height={5}
+              fill="#3b82f6"
+              stroke="#1e40af"
+              strokeWidth={1}
+            />
+            
+            {/* Yellow goal (bottom) */}
+            <rect
+              x={(displayWidth - GOAL_WIDTH * scale) / 2}
+              y={displayHeight - 5}
+              width={GOAL_WIDTH * scale}
+              height={5}
+              fill="#facc15"
+              stroke="#b45309"
+              strokeWidth={1}
+            />
+          </svg>
+
+          {/* Ball position (IR) */}
+          {ballSource === 'ir' && ballPixelX !== null && ballPixelY !== null && (
+            <div
+              className="absolute w-2 h-2 bg-orange-500 rounded-full border border-orange-700 transform -translate-x-1/2 -translate-y-1/2 z-10"
+              style={{ left: `${ballPixelX}px`, top: `${ballPixelY}px` }}
+              title={`Ball (IR): Distance ${irBallDistance?.toFixed(0)}mm, Angle ${irBallAngle?.toFixed(1)}°`}
+            ></div>
+          )}
+          
+          {/* Ball position (Camera) */}
+          {ballSource === 'camera' && ballPixelX !== null && ballPixelY !== null && (
+            <div
+              className="absolute w-2.5 h-2.5 bg-green-400 rounded-full border border-green-600 transform -translate-x-1/2 -translate-y-1/2 z-10"
+              style={{ left: `${ballPixelX}px`, top: `${ballPixelY}px` }}
+              title={`Ball (Camera): Distance ${camBallDistance?.toFixed(0)}mm, Angle ${camBallAngle?.toFixed(1)}°`}
+            ></div>
+          )}
+
+          {/* Robot position and orientation */}
+          {robotPixelX !== null && robotPixelY !== null ? (
+            <div
+              className="absolute transform -translate-x-1/2 -translate-y-1/2 z-20"
+              style={{ left: `${robotPixelX}px`, top: `${robotPixelY}px` }}
+            >
+              {/* Robot body */}
+              <div className="relative w-4 h-4">
+                <div className="absolute inset-0 bg-red-500 rounded-full border border-red-700" />
+                
+                {/* Robot orientation indicator (front/heading) */}
+                {robotHeading !== null && (
+                  <div
+                    className="absolute w-0.5 h-2 bg-white left-1/2 bottom-1/2 origin-bottom"
+                    style={{
+                      transform: `translateX(-50%) rotate(${robotHeading + rotationAngle}deg)`,
+                    }}
+                  ></div>
+                )}
+              </div>
+              <div className="text-xs text-white font-mono mt-1 whitespace-nowrap">
+                {robotX?.toFixed(0)}, {robotY?.toFixed(0)}
+              </div>
+            </div>
+          ) : (
+            <div className="absolute inset-0 flex items-center justify-center text-xs text-white font-mono bg-black/70 font-semibold">
+              No Position
+            </div>
+          )}
+        </div>
+        
+        <div className="text-xs text-main-600 dark:text-main-400 space-y-1">
+          <div>Confidence: {confidence}</div>
+          {robotHeading !== null && <div>Heading: {robotHeading.toFixed(1)}°</div>}
+          {ballSource && <div>Ball: {ballSource.toUpperCase()}</div>}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+interface LogPanelProps {
+  logs: any[];
+}
+
+const parseLogMessage = (message: string): { text: string; color: string } => {
+  const cleanText = message.replace(/\x1b\[[0-9;]*m/g, '');
+  
+  let color = 'text-white';
+  
+  if (message.includes('\x1b[1;31m') || message.includes('\x1b[91m')) {
+    color = 'text-red-500';
+  } else if (message.includes('\x1b[1;32m') || message.includes('\x1b[92m')) {
+    color = 'text-green-500';
+  } else if (message.includes('\x1b[1;33m') || message.includes('\x1b[93m')) {
+    color = 'text-yellow-500';
+  } else if (message.includes('\x1b[1;34m') || message.includes('\x1b[94m')) {
+    color = 'text-blue-500';
+  } else if (message.includes('\x1b[1;35m') || message.includes('\x1b[95m')) {
+    color = 'text-purple-500';
+  } else if (message.includes('\x1b[1;36m') || message.includes('\x1b[96m')) {
+    color = 'text-cyan-500';
+  } else if (message.includes('\x1b[1;37m') || message.includes('\x1b[97m')) {
+    color = 'text-white';
+  } else if (message.includes('\x1b[30m') || message.includes('\x1b[90m')) {
+    color = 'text-gray-500';
+  }
+  
+  return { text: cleanText, color };
+};
+
+const LogPanel: React.FC<LogPanelProps> = ({ logs }) => {
+  const scrollRef = useRef<HTMLDivElement>(null);
+  
+  const levelColorMap: Record<string, string> = {
+    debug: 'text-main-600',
+    info: 'text-blue-400',
+    warning: 'text-yellow-500',
+    error: 'text-red-500',
+    critical: 'text-red-700',
+  };
+  
+  useEffect(() => {
+    if (scrollRef.current) {
+      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+    }
+  }, [logs]);
+
+  return (
+    <div className="flex flex-col h-full bg-main-950 rounded">
+      <div className="text-xs font-bold text-white uppercase px-2 py-1 border-b border-main-800 flex-shrink-0">
+        Logs ({logs.length})
+      </div>
+      <div
+        ref={scrollRef}
+        className="flex-1 overflow-y-auto font-mono text-xs space-y-0.5 p-2"
+      >
+        {logs.map((log, idx) => {
+          const { text, color } = parseLogMessage(log.message || '');
+          const timestamp = log.time ? new Date(log.time).toLocaleTimeString() : '';
+          const level = (log.level || 'info') as string;
+          const levelColor = levelColorMap[level] || 'text-main-400';
+          
+          return (
+            <div key={idx} className="flex gap-2">
+              <span className="text-main-700 flex-shrink-0 w-20">{timestamp}</span>
+              <span className={`flex-shrink-0 w-12 ${levelColor}`}>
+                [{level.toUpperCase().slice(0, 3)}]
+              </span>
+              <span className={`flex-1 break-words ${color}`}>{text}</span>
+            </div>
+          );
+        })}
       </div>
     </div>
   );
@@ -275,6 +538,8 @@ export const RobotDashboard: React.FC = () => {
   const { sensorData } = useSensorData();
   const { frame } = useVideoStream(15, true);
   const frameUrl = useFrameDataUrl(frame);
+  const { logsUpdates } = useUpdateSubscriptions();
+  const { targetGoal } = useTargetGoal();
 
   const [fps, setFps] = useState(5);
   const [videoEnabled, setVideoEnabled] = useState(true);
@@ -363,8 +628,8 @@ export const RobotDashboard: React.FC = () => {
           </div>
 
           {/* Logs */}
-          <div className="flex-1 w-full bg-white dark:bg-main-950 outline-solid outline-2 dark:outline-main-900 overflow-hidden">
-            
+          <div className="flex-1 w-full outline-solid outline-2 dark:outline-main-900 overflow-hidden">
+            <LogPanel logs={logsUpdates} />
           </div>
         </div>
         
@@ -504,7 +769,15 @@ export const RobotDashboard: React.FC = () => {
                 <FieldVisualizer 
                   robotX={sensorData?.position_estimate?.x_mm || null}
                   robotY={sensorData?.position_estimate?.y_mm || null}
+                  robotHeading={formattedSensors?.compass?.heading ? parseFloat(formattedSensors.compass.heading.toString()) : null}
                   confidence={formattedSensors?.position.confidence || '0%'}
+                  targetGoal={targetGoal}
+                  irBallAngle={formattedSensors?.ir_ball.angle ? parseFloat(formattedSensors.ir_ball.angle.toString()) : null}
+                  irBallDistance={formattedSensors?.ir_ball.distance ? parseFloat(formattedSensors.ir_ball.distance.toString()) : null}
+                  irBallDetected={formattedSensors?.ir_ball.detected || false}
+                  camBallAngle={formattedSensors?.cam_ball.angle ? parseFloat(formattedSensors.cam_ball.angle.toString()) : null}
+                  camBallDistance={formattedSensors?.cam_ball.distance ? parseFloat(formattedSensors.cam_ball.distance.toString()) : null}
+                  camBallDetected={formattedSensors?.cam_ball.detected || false}
                 />
               </SensorCard>
             </div>
