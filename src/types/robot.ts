@@ -55,6 +55,19 @@ export interface SensorData {
     bt_module_state: boolean;
     switch_state: boolean;
   };
+  goal_detection?: {
+    detected: boolean;
+    alignment: number;
+    center_x: number | null;
+    area: number;
+    distance_mm: number | null;
+    height_pixels: number | null;
+  };
+  position_estimate?: {
+    x_mm: number | null;
+    y_mm: number | null;
+    confidence: number;
+  };
   timestamp?: number;
 }
 

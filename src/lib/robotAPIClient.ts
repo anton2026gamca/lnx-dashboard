@@ -188,6 +188,139 @@ export class RobotAPIClient {
     await this._emit('reset_compass', {});
   }
 
+  // ============ Calibration Methods ============
+
+  /**
+   * Start line sensor calibration
+   * @param phase - Calibration phase (1 or 2)
+   */
+  async startLineCalibration(phase: number = 1): Promise<void> {
+    await this._emit('start_line_calibration', { phase });
+  }
+
+  /**
+   * Stop line sensor calibration and get thresholds
+   */
+  async stopLineCalibration(): Promise<{
+    phase: number;
+    thresholds: number[][];
+    min_values: number[];
+    max_values: number[];
+    can_start_phase2: boolean;
+  }> {
+    return this._emit('stop_line_calibration', {});
+  }
+
+  /**
+   * Cancel line sensor calibration
+   */
+  async cancelLineCalibration(): Promise<void> {
+    await this._emit('cancel_line_calibration', {});
+  }
+
+  /**
+   * Get line calibration status
+   */
+  async getLineCalibrationStatus(): Promise<{
+    phase: number;
+    min_values: number[];
+    max_values: number[];
+  }> {
+    return this._emit('get_line_calibration_status', {});
+  }
+
+  /**
+   * Calibrate ball detection distance
+   * @param knownDistanceMm - Known distance in millimeters
+   */
+  async calibrateBallDistance(knownDistanceMm: number): Promise<{ calibration_constant: number }> {
+    return this._emit('camera_ball_distance_calibration', { known_distance_mm: knownDistanceMm });
+  }
+
+  /**
+   * Get ball calibration data
+   */
+  async getBallCalibration(): Promise<{
+    calibration_constant: number;
+    distance_offset: number;
+  }> {
+    return this._emit('get_ball_calibration', {});
+  }
+
+  /**
+   * Start goal distance calibration
+   * @param initialDistance - Initial distance in mm (default 200)
+   * @param lineDistance - Line distance in mm (default 200)
+   */
+  async startGoalDistanceCalibration(
+    initialDistance: number = 200,
+    lineDistance: number = 200,
+  ): Promise<void> {
+    await this._emit('start_goal_distance_calibration', {
+      initial_distance: initialDistance,
+      line_distance: lineDistance,
+    });
+  }
+
+  /**
+   * Stop goal distance calibration
+   */
+  async stopGoalDistanceCalibration(): Promise<{
+    focal_length?: number;
+    message?: string;
+  }> {
+    return this._emit('stop_goal_distance_calibration', {});
+  }
+
+  /**
+   * Cancel goal distance calibration
+   */
+  async cancelGoalDistanceCalibration(): Promise<void> {
+    await this._emit('cancel_goal_distance_calibration', {});
+  }
+
+  /**
+   * Get goal distance calibration status
+   */
+  async getGoalDistanceCalibrationStatus(): Promise<{
+    calibrating: boolean;
+    distance_offset: number;
+  }> {
+    return this._emit('get_goal_distance_calibration_status', {});
+  }
+
+  /**
+   * Get goal focal length
+   */
+  async getGoalFocalLength(): Promise<{ focal_length: number }> {
+    return this._emit('get_goal_focal_length', {});
+  }
+
+  /**
+   * Set goal focal length
+   * @param focalLength - Focal length value
+   */
+  async setGoalFocalLength(focalLength: number): Promise<void> {
+    await this._emit('set_goal_focal_length', { focal_length: focalLength });
+  }
+
+  /**
+   * Compute HSV values from image regions
+   * @param regions - Array of regions with x, y, width, height
+   */
+  async computeHsvFromRegions(
+    regions: Array<{ x: number; y: number; width: number; height: number }>,
+  ): Promise<{
+    h_min: number;
+    h_max: number;
+    s_min: number;
+    s_max: number;
+    v_min: number;
+    v_max: number;
+  }> {
+    return this._emit('compute_hsv_from_regions', { regions });
+  }
+
   // ============ Video Streaming ============
 
   /**

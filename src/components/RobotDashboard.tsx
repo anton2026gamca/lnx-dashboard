@@ -167,6 +167,106 @@ const AngleIndicator: React.FC<AngleIndicatorProps> = ({ angle, enabled }) => (
   </div>
 );
 
+interface FieldVisualizerProps {
+  robotX: number | null;
+  robotY: number | null;
+  confidence: string;
+}
+
+const FieldVisualizer: React.FC<FieldVisualizerProps> = ({ robotX, robotY, confidence }) => {
+  // TODO: Rotate field based on target goal (target goal is up, the position is relative to target goal center)
+  // TODO: Add robot orientation if available
+  // TODO: Add detected ball position if available (if camera detected), add detected ball angle if available (if IR detected)
+  // TODO: Add field markings (edge lines, goal lines) if possible, follow [official field specs](https://robocup-junior.github.io/soccer-rules/master/field_specification.html)
+  // TODO: Resize field to fit container while maintaining aspect ratio
+  const FIELD_WIDTH = 2190;  // mm
+  const FIELD_HEIGHT = 1580; // mm
+  const GOAL_WIDTH = 600;    // mm
+  const GOAL_THICKNESS = 10; // px
+  const SCALE = 0.08;        // pixels per mm
+  
+  const displayWidth = FIELD_WIDTH * SCALE;
+  const displayHeight = FIELD_HEIGHT * SCALE;
+  const robotPixelX = robotX ? robotX * SCALE : null;
+  const robotPixelY = robotY ? robotY * SCALE : null;
+
+  const goalSize = GOAL_WIDTH * SCALE;
+
+  return (
+    <div className="flex flex-col gap-2 items-center w-full">
+      <div 
+        className="relative bg-green-900 border-2 border-white dark:border-main-600 rounded"
+        style={{ width: `${displayWidth}px`, height: `${displayHeight}px` }}
+      >
+        {/* Yellow goal (left) */}
+        <div 
+          className="absolute w-4 h-3 bg-yellow-400 border border-yellow-600"
+          style={{ left: `0px`, top: `${displayHeight / 2 - goalSize / 2}px`, width: `${GOAL_THICKNESS}px`, height: `${goalSize}px` }}
+          title="Yellow Goal"
+        />
+        
+        {/* Blue goal (right) */}
+        <div 
+          className="absolute w-4 h-3 bg-blue-500 border border-blue-700"
+          style={{ right: `0px`, top: `${displayHeight / 2 - goalSize / 2}px`, width: `${GOAL_THICKNESS}px`, height: `${goalSize}px` }}
+          title="Blue Goal"
+        />
+        
+        {/* Robot position */}
+        {robotPixelX !== null && robotPixelY !== null ? (
+          <div 
+            className="absolute w-3 h-3 bg-red-500 rounded-full border border-red-700 transform -translate-x-1/2 -translate-y-1/2"
+            style={{ left: `${robotPixelX}px`, top: `${robotPixelY}px` }}
+            title={`Robot: ${robotX?.toFixed(0)}mm, ${robotY?.toFixed(0)}mm`}
+          />
+        ) : (
+          <div className="absolute inset-0 flex items-center justify-center text-xs text-white">
+            No Position
+          </div>
+        )}
+      </div>
+      <div className="text-xs text-main-600 dark:text-main-400">
+        Confidence: {confidence}
+      </div>
+    </div>
+  );
+};
+
+interface RunningStateVisualizerProps {
+  running: boolean;
+  btModuleEnabled: boolean;
+  btModuleState: boolean;
+  switchState: boolean;
+}
+
+const RunningStateVisualizer: React.FC<RunningStateVisualizerProps> = ({
+  running,
+  btModuleEnabled,
+  btModuleState,
+  switchState,
+}) => {
+  const StatusIndicator: React.FC<{ label: string; active: boolean }> = ({ label, active }) => (
+    <div className="flex items-center gap-1 text-xs">
+      <div className={`w-3 h-3 rounded-full mr-1 ${active ? 'bg-green-500' : 'bg-main-600'}`} />
+      <span className={active ? 'text-green-500' : 'text-main-500'}>{label}</span>
+    </div>
+  );
+
+  return (
+    <div className="space-y-1 text-xs font-mono">
+      <div className={`flex items-center gap-2 p-1 ${running ? 'bg-green-900 text-green-200' : 'bg-main-800 text-main-500'}`}>
+        <span className="font-bold">RUNNING:</span>
+        <span>{running ? 'ENABLED' : 'DISABLED'}</span>
+      </div>
+      
+      <div className="space-y-1 pl-2 border-main-700">
+        <StatusIndicator label="BT Module Enabled" active={btModuleEnabled} />
+        <StatusIndicator label="BT Module State" active={btModuleState} />
+        <StatusIndicator label="Switch State" active={switchState} />
+      </div>
+    </div>
+  );
+};
 
 // ============= Main Dashboard =============
 
@@ -314,20 +414,38 @@ export const RobotDashboard: React.FC = () => {
               </div>
             </SensorCard>
 
-            {/* Motors */}
-            <SensorCard label="Motors">
-              <div className="relative grid grid-cols-2 gap-y-2 gap-x-12">
-                {[0, 1, 2, 3].map((i) => (
-                  <SensorProperty
-                    key={i}
-                    label={`M${i}`}
-                    value={formattedSensors?.motors[i]?.toString() || '0'}
-                  />
-                ))}
-                <div className="flex items-center justify-center absolute inset-0 pointer-events-none">
-                  <div className="outline-2 outline-dashed dark:outline-main-500 hover:dark:outline-main-400 bg-white dark:bg-main-950 pointer-events-auto p-2">
-                    <MotorVisualizer speeds={Object.values(formattedSensors?.motors || [0, 0, 0, 0]).map(Number)} />
+            {/* Goal Detection */}
+            <SensorCard label="Goal Detection">
+              <div className="space-y-2 text-xs">
+                <div className="flex justify-between items-center">
+                  <span className="text-main-600 dark:text-main-400">Detected:</span>
+                  <div className={`px-2 font-bold ${
+                    formattedSensors?.goal.detected 
+                      ? 'bg-green-600 text-white' 
+                      : 'bg-main-700 text-main-400'
+                  }`}>
+                    {formattedSensors?.goal.detected ? 'YES' : 'NO'}
                   </div>
+                </div>
+                <div className="flex justify-between pt-1 border-t border-main-700">
+                  <span className="text-main-600 dark:text-main-400">Alignment:</span>
+                  <span className="font-mono text-green-500">{formattedSensors?.goal.alignment || 'N/A'}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-main-600 dark:text-main-400">Center X:</span>
+                  <span className="font-mono text-green-500">{formattedSensors?.goal.center_x || 'N/A'}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-main-600 dark:text-main-400">Area:</span>
+                  <span className="font-mono text-green-500">{formattedSensors?.goal.area || 'N/A'}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-main-600 dark:text-main-400">Height:</span>
+                  <span className="font-mono text-green-500">{formattedSensors?.goal.height || 'N/A'}</span>
+                </div>
+                <div className="flex justify-between pt-1 border-t border-main-700">
+                  <span className="text-main-600 dark:text-main-400">Distance:</span>
+                  <span className="font-mono text-blue-500">{formattedSensors?.goal.distance || 'N/A'}</span>
                 </div>
               </div>
             </SensorCard>
@@ -362,48 +480,43 @@ export const RobotDashboard: React.FC = () => {
               </div>
             </SensorCard>
 
-            {/* Goal Detection */}
-            <SensorCard label="Goal Detection">
-              <div className="space-y-1 text-xs">
-                <div className="flex justify-between">
-                  <span className="text-main-600 dark:text-main-400">Detected:</span>
-                  <span className={formattedSensors?.goal.detected ? 'text-green-500' : 'text-main-500'}>
-                    {formattedSensors?.goal.detected ? 'YES' : 'NO'}
-                  </span>
-                </div>
-                {formattedSensors?.goal.distance && (
-                  <div className="flex justify-between">
-                    <span className="text-main-600 dark:text-main-400">Distance:</span>
-                    <span className="font-mono text-green-500">
-                      {formattedSensors?.goal.distance}
-                    </span>
+            {/* Motors */}
+            <SensorCard label="Motors">
+              <div className="relative grid grid-cols-2 gap-y-2 gap-x-12">
+                {[0, 1, 2, 3].map((i) => (
+                  <SensorProperty
+                    key={i}
+                    label={`M${i}`}
+                    value={formattedSensors?.motors[i]?.toString() || '0'}
+                  />
+                ))}
+                <div className="flex items-center justify-center absolute inset-0 pointer-events-none">
+                  <div className="outline-2 outline-dashed dark:outline-main-500 hover:dark:outline-main-400 bg-white dark:bg-main-950 pointer-events-auto p-2">
+                    <MotorVisualizer speeds={Object.values(formattedSensors?.motors || [0, 0, 0, 0]).map(Number)} />
                   </div>
-                )}
+                </div>
               </div>
-              {/* TODO: Add other goal detection properties with as much visual elemenets as possible */}
             </SensorCard>
 
             {/* Position Estimate */}
             <div className="col-span-2 row-span-2">
               <SensorCard label="Position">
-                <div className="space-y-1 text-xs font-mono">
-                  <div className="flex justify-between">
-                    <span className="text-main-600 dark:text-main-400">X:</span>
-                    <span className="text-green-500">{formattedSensors?.position.x || '---'}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-main-600 dark:text-main-400">Y:</span>
-                    <span className="text-green-500">{formattedSensors?.position.y || '---'}</span>
-                  </div>
-                </div>
-                {/* field size: 2190mm x 1580mm */}
-                {/* TODO: Add visual field with goals */}
+                <FieldVisualizer 
+                  robotX={sensorData?.position_estimate?.x_mm || null}
+                  robotY={sensorData?.position_estimate?.y_mm || null}
+                  confidence={formattedSensors?.position.confidence || '0%'}
+                />
               </SensorCard>
             </div>
 
             {/* Running State */}
-            <SensorCard label="Running State">
-              {/* TODO: Add visual running properties with an equasion-like style */}
+            <SensorCard label="Hardware Enabled State">
+              <RunningStateVisualizer 
+                running={formattedSensors?.running_state.running || false}
+                btModuleEnabled={formattedSensors?.running_state.bt_module_enabled || false}
+                btModuleState={formattedSensors?.running_state.bt_module_state || false}
+                switchState={formattedSensors?.running_state.switch_state || false}
+              />
             </SensorCard>
           </div>
 

@@ -2,7 +2,6 @@
  * Robot utilities and helpers
  */
 
-import { robotClient } from '@/lib/robotAPIClient';
 import { SensorData } from '@/types/robot';
 
 /**
@@ -60,6 +59,31 @@ export const formatSensorData = (data: SensorData): Record<string, any> => {
       thresholds: data.line.thresholds.map((t, _) => `${t[0]}-${t[1]}`),
     } : null,
     motors: data.motors ? data.motors.map((m, _) => `${(m / 255 * 100).toFixed(0)}%`) : null,
+    goal: data.goal_detection
+      ? {
+          detected: data.goal_detection.detected,
+          alignment: `${(data.goal_detection.alignment * 100).toFixed(1)}%`,
+          center_x: data.goal_detection.center_x !== null ? `${data.goal_detection.center_x.toFixed(0)}px` : 'N/A',
+          area: `${data.goal_detection.area.toFixed(0)}px²`,
+          distance: data.goal_detection.distance_mm !== null ? `${data.goal_detection.distance_mm.toFixed(0)}mm` : 'N/A',
+          height: data.goal_detection.height_pixels !== null ? `${data.goal_detection.height_pixels.toFixed(0)}px` : 'N/A',
+        }
+      : { detected: false, alignment: 'N/A', center_x: 'N/A', area: '0px²', distance: 'N/A', height: 'N/A' },
+    position: data.position_estimate
+      ? {
+          x: data.position_estimate.x_mm !== null ? `${data.position_estimate.x_mm.toFixed(0)}mm` : '---',
+          y: data.position_estimate.y_mm !== null ? `${data.position_estimate.y_mm.toFixed(0)}mm` : '---',
+          confidence: `${(data.position_estimate.confidence * 100).toFixed(1)}%`,
+        }
+      : { x: '---', y: '---', confidence: '0%' },
+    running_state: data.running_state
+      ? {
+          running: data.running_state.running,
+          bt_module_enabled: data.running_state.bt_module_enabled,
+          bt_module_state: data.running_state.bt_module_state,
+          switch_state: data.running_state.switch_state,
+        }
+      : { running: false, bt_module_enabled: false, bt_module_state: false, switch_state: false },
   };
 };
 

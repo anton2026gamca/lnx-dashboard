@@ -93,6 +93,38 @@ export const useRobotMode = () => {
 };
 
 /**
+ * Hook to fetch target goal
+ */
+export const useTargetGoal = () => {
+  const { connectionState } = useRobot();
+  const [targetGoal, setTargetGoal] = useState<'yellow' | 'blue' | null>(null);
+
+  const fetchTargetGoal = useCallback(async () => {
+    if (!connectionState.isConnected) {
+      setTargetGoal(null);
+      return;
+    }
+    
+    try {
+      const goal = await robotClient.getGoalSettings();
+      setTargetGoal(goal.goal_color || null);
+    }
+    catch (err) {
+      console.error('Failed to fetch target goal:', err);
+      setTargetGoal(null);
+    }
+  }, [connectionState.isConnected]);
+
+  useEffect(() => {
+    fetchTargetGoal();
+    const timer = setInterval(fetchTargetGoal, 5000); // Refresh every 5 seconds
+    return () => clearInterval(timer);
+  }, [fetchTargetGoal]);
+  
+  return { targetGoal, refresh: fetchTargetGoal };
+};
+
+/**
  * Hook for video streaming
  */
 export const useVideoStream = (fps: number = 30, showDetections: boolean = true) => {
