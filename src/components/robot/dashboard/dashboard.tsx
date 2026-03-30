@@ -4,12 +4,11 @@
 
 'use client';
 
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { useRobot } from '@/context/RobotContext';
-import { useSensorData, useVideoStream, useFrameDataUrl, useUpdateSubscriptions, useTargetGoal, useRobotMode } from '@/hooks/useRobot';
+import { useSensorData, useVideoStream, useFrameDataUrl, useLogs, useTargetGoal } from '@/hooks/useRobot';
 import { formatSensorData } from '@/lib/robotUtils';
-import { robotClient } from '@/lib/robotAPIClient';
 import { CompassCard } from './sensor-cards/compass-card';
 import { LineSensorsCard } from './sensor-cards/line-sensors-card';
 import { GoalDetectionCard } from './sensor-cards/goal-detection-card';
@@ -18,6 +17,7 @@ import { MotorsCard } from './sensor-cards/motors-card';
 import { FieldCard } from './sensor-cards/field-card';
 import { HardwareStateCard } from './sensor-cards/hardware-state-card';
 import { LogPanel } from './logs-panel';
+import { ControlPanel } from '@/components/control-panel';
 
 // ============= Main Dashboard =============
 
@@ -26,71 +26,10 @@ export const RobotDashboard: React.FC = () => {
   const { sensorData } = useSensorData();
   const { frame } = useVideoStream(15, true);
   const frameUrl = useFrameDataUrl(frame);
-  const { logsUpdates } = useUpdateSubscriptions();
-  const { targetGoal, refresh: refreshTargetGoal } = useTargetGoal();
-  const { mode, changeMode } = useRobotMode();
+  const logs = useLogs();
 
   const [fps, setFps] = useState(5);
   const [videoEnabled, setVideoEnabled] = useState(true);
-  const [keyPressed, setKeyPressed] = useState<Set<string>>(new Set());
-
-  useEffect(() => {
-    if (mode !== 'manual') return;
-
-    const handleKeyDown = (e: KeyboardEvent) => {
-      const key = e.key.toLowerCase();
-      if (['w', 'a', 's', 'd', 'arrowleft', 'arrowright'].includes(key)) {
-        e.preventDefault();
-        setKeyPressed(prev => new Set(prev).add(key));
-      }
-    };
-
-    const handleKeyUp = (e: KeyboardEvent) => {
-      const key = e.key.toLowerCase();
-      if (['w', 'a', 's', 'd', 'arrowleft', 'arrowright'].includes(key)) {
-        e.preventDefault();
-        const newSet = new Set(keyPressed);
-        newSet.delete(key);
-        setKeyPressed(newSet);
-      }
-    };
-
-    window.addEventListener('keydown', handleKeyDown);
-    window.addEventListener('keyup', handleKeyUp);
-
-    return () => {
-      window.removeEventListener('keydown', handleKeyDown);
-      window.removeEventListener('keyup', handleKeyUp);
-    };
-  }, [mode, keyPressed]);
-
-  useEffect(() => {
-    if (mode !== 'manual' || keyPressed.size === 0) return;
-
-    let angle = 0;
-    let speed = 0;
-    let rotate = 0;
-
-    if (keyPressed.has('w')) speed = 100;
-    if (keyPressed.has('s')) speed = -100;
-    if (keyPressed.has('a')) angle = 90;
-    if (keyPressed.has('d')) angle = -90;
-    if (keyPressed.has('arrowleft')) rotate = 50;
-    if (keyPressed.has('arrowright')) rotate = -50;
-
-    robotClient.setManualControl(angle, speed, rotate).catch(err => {
-      console.error('Failed to send manual control:', err);
-    });
-  }, [keyPressed, mode]);
-
-  const setGoalColor = async (color: 'yellow' | 'blue') => {
-    try {
-      await robotClient.setGoalSettings({ goal_color: color });
-      await refreshTargetGoal();
-    } catch (err) {
-      console.error(`Failed to set goal color to ${color}:`, err);
-    }
-  };
 
   if (!connectionState.isConnected) {
     return (
@@ -105,10 +44,12 @@ export const RobotDashboard: React.FC = () => {
 
   const formattedSensors = formatSensorData(sensorData);
 
+  const { targetGoal } = useTargetGoal();
+
   return (
-    <div className="h-screen bg-white dark:bg-black flex flex-col">
+    <div className="h-screen bg-white dark:bg-black flex flex-col max-h-screen">
       {/* Header */}
-      <div className="p-2">
+      <div className="flex-none p-2">
         <div className="flex items-center justify-center gap-3">
           <div className="flex flex-col items-center">
             <h1 className="text-xl font-bold text-main-900 dark:text-white">
@@ -122,7 +63,7 @@ export const RobotDashboard: React.FC = () => {
         </div>
       </div>
 
-      <div className="flex items-center justify-center h-full gap-3 p-2">
+      <div className="flex-1 flex items-center justify-center gap-3 p-2 overflow-y-auto">
         {/* Left */}
         <div className="flex-6 h-full flex flex-col items-center justify-center gap-3">
           {/* Video Controls & Stream */}
@@ -163,8 +104,8 @@ export const RobotDashboard: React.FC = () => {
           </div>
 
           {/* Logs */}
-          <div className="flex-1 w-full outline-solid outline-2 dark:outline-main-900 overflow-hidden">
-            <LogPanel logs={logsUpdates} />
+          <div className="flex-1 w-full outline-solid outline-2 dark:outline-main-900 overflow-y-auto">
+            <LogPanel logs={logs} />
           </div>
         </div>
         
@@ -181,49 +122,10 @@ export const RobotDashboard: React.FC = () => {
             <HardwareStateCard fdata={formattedSensors} />
           </div>
 
-          {/* Control */}
-          <div className="flex-1 w-full bg-white dark:bg-main-950 outline-solid outline-2 dark:outline-main-900 overflow-hidden p-2">
-            <div className="flex flex-col h-full gap-2">
-              <div className="bg-main-900 p-2">
-                <h3 className="text-xs font-bold text-white uppercase mb-2">Mode</h3>
-                <div className="grid grid-cols-3 gap-1">
-                  <Button activeClass='bg-blue-500 hover:bg-blue-500 text-white' active={mode === 'idle'}       onClick={() => changeMode('idle')      }>Idle</Button>
-                  <Button activeClass='bg-blue-500 hover:bg-blue-500 text-white' active={mode === 'autonomous'} onClick={() => changeMode('autonomous')}>Autonomous</Button>
-                  <Button activeClass='bg-blue-500 hover:bg-blue-500 text-white' active={mode === 'manual'}     onClick={() => changeMode('manual')    }>Manual</Button>
-                </div>
-              </div>
-              <div className="bg-main-900 p-2">
-                <h3 className="text-xs font-bold text-white uppercase mb-2">Target Goal</h3>
-                <div className="grid grid-cols-2 gap-1">
-                  <Button activeClass='bg-yellow-500 hover:bg-yellow-500 text-black' active={targetGoal === 'yellow'} onClick={() => setGoalColor('yellow')}>Yellow</Button>
-                  <Button activeClass='bg-blue-500   hover:bg-blue-500   text-white' active={targetGoal === 'blue'}   onClick={() => setGoalColor('blue')  }>Blue</Button>
-                </div>
-              </div>
-              <div className="bg-main-900 p-2">
-                <h3 className="text-xs font-bold text-white uppercase mb-2">Settings</h3>
-                <div className="grid grid-cols-2 gap-1">
-                  <Button onClick={() => {}}>Motor Settings</Button>
-                  <Button onClick={() => {}}>Autonomous Settings</Button>
-                </div>
-              </div>
-              <div className="bg-main-900 p-2">
-                <Button onClick={() => {}} className="w-full" title="Open calibration menu">Calibration Menu</Button>
-              </div>
-              {mode === 'manual' && (
-                <div className="bg-main-950 border-2 border-green-700 p-2 flex-1 flex flex-col items-center justify-center p-5">
-                  <div className="text-xs font-bold text-green-200 uppercase mb-2">Manual Control Active</div>
-                  <div className="text-xs text-green-300 space-y-1 font-mono">
-                    <div>W/S - Forward/Backward</div>
-                    <div>A/D - Strafe Left/Right</div>
-                    <div>← / → - Rotate</div>
-                  </div>
-                </div>
-              )}
-              {mode !== 'manual' && (
-                <div className="bg-main-950 border-2 border-main-800 p-2 flex-1 flex items-center justify-center text-center p-5">
-                  <div className="text-xs text-main-500">Switch to <span className="font-bold text-yellow-400">Manual Mode</span> to use keyboard controls</div>
-                </div>
-              )}
+          {/* Control Panel */}
+          <div className="flex-1 w-full bg-white dark:bg-main-950 outline-solid outline-2 dark:outline-main-900 p-2">
+            <div className="flex flex-col h-full gap-2 overflow-y-auto">
+              <ControlPanel />
             </div>
           </div>
         </div>
@@ -231,3 +133,4 @@ export const RobotDashboard: React.FC = () => {
     </div>
   );
 };
+

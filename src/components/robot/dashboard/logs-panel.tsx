@@ -10,7 +10,7 @@ interface LogPanelProps {
 }
 
 const parseLogMessage = (message: string): { text: string; color: string } => {
-  const cleanText = message.replace(/\x1b\[[0-9;]*m/g, '');
+  const cleanText = message.replace(/\x1b\[[0-9;]*m/g, '').replace(/^.*?: /, '');
   
   let color = 'text-white';
   
@@ -46,7 +46,7 @@ export const LogPanel: React.FC<LogPanelProps> = ({ logs }) => {
     info: 'text-lime-600',
     warning: 'text-yellow-500',
     error: 'text-red-500',
-    critical: 'text-red-500',
+    critical: 'text-main-950 bg-red-500',
   };
 
   const levelButtonMap: Record<string, string> = {
@@ -58,7 +58,7 @@ export const LogPanel: React.FC<LogPanelProps> = ({ logs }) => {
   };
   
   const filteredLogs = logs.filter(log => {
-    const level = (log.level || 'info') as string;
+    const level = (log.level.toLowerCase() || 'info') as string;
     const matchesLevel = selectedLevels.has(level);
     const matchesSearch = searchQuery === '' || 
       log.message.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -78,7 +78,7 @@ export const LogPanel: React.FC<LogPanelProps> = ({ logs }) => {
   
   const exportLogs = () => {
     const csvContent = filteredLogs.map(log => {
-      const timestamp = log.time ? new Date(log.time).toISOString() : '';
+      const timestamp = log.time ? new Date(log.time * 1000).toISOString() : '';
       const message = log.message.replace(/\x1b\[[0-9;]*m/g, '').replace(/"/g, '""');
       return `"${timestamp}","${log.level}","${log.logger}","${message}"`;
     }).join('\n');
@@ -138,17 +138,17 @@ export const LogPanel: React.FC<LogPanelProps> = ({ logs }) => {
         ) : (
           filteredLogs.map((log, idx) => {
             const { text, color } = parseLogMessage(log.message || '');
-            const timestamp = log.time ? new Date(log.time).toLocaleTimeString() : '';
-            const level = (log.level || 'info') as string;
-            const levelColor = levelColorMap[level] || 'text-main-400';
+            const timestamp = log.time ? `${new Date(log.time * 1000).toLocaleTimeString('en-GB', { hour12: false })}` : '';
+            const level = (log.level.toLowerCase() || 'info') as string;
+            const levelColor = levelColorMap[level] || 'text-white';
             const logger = `[${log.logger}]` || '';
             
             return (
-              <div key={idx} className="flex gap-2">
-                <span className="flex-shrink-0 w-20">{timestamp}</span>
-                <span className={`flex-shrink-0 w-12`}>[<span className={levelColor}>{level.toUpperCase().slice(0, 3)}</span>]</span>
-                <span className="flex-shrink-0 w-12">{logger}:</span>
-                <span className={`flex-1 break-words ${color}`}>{text}</span>
+              <div key={idx} className="flex gap-2 text-white">
+                <span className="flex-shrink-0">{timestamp}</span>
+                <span className="flex-shrink-0 flex gap-1">[<span className={`${levelColor} font-bold`}>{level.toUpperCase()}</span>]</span>
+                <span className="flex-shrink-0">{logger}:</span>
+                <span className={`flex-1 whitespace-pre-wrap ${color}`}>{text}</span>
               </div>
             );
           })

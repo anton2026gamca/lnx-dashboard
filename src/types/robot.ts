@@ -137,7 +137,7 @@ export interface GoalSettings {
 
 export interface AutonomousSettings {
   state_machine?: string | null;
-  always_facing_goal_enabled?: boolean;
+  always_face_goal_enabled?: boolean;
 }
 
 export interface LogEntry {

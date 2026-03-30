@@ -120,8 +120,8 @@ export class RobotAPIClient {
    * Get autonomous mode settings
    */
   async getAutonomousSettings(): Promise<AutonomousSettings | null> {
-    const response = await this._emit('get_autonomous_settings', {});
-    return response.current_state_machine || null;
+    const response = await this._emit('get_autonomous_state', {});
+    return response || null;
   }
 
   /**
@@ -181,7 +181,7 @@ export class RobotAPIClient {
    * Set autonomous mode settings
    */
   async setAutonomousSettings(settings: AutonomousSettings): Promise<void> {
-    await this._emit('set_autonomous_settings', { settings });
+    await this._emit('set_autonomous_state', { ...settings });
   }
 
   /**
@@ -319,6 +319,83 @@ export class RobotAPIClient {
     v_min: number; v_max: number;
   } | null> {
     return this._emit('compute_hsv_from_regions', { regions });
+  }
+
+  // ============ Update Subscriptions ============
+
+  /**
+   * Generic subscribe update function for socket events.
+   * @param eventName The event name to listen for.
+   * @param subscribeKey The key to enable/disable in subscribe_updates.
+   * @param callback The callback to invoke when event fires.
+   * @returns Unsubscribe function.
+   */
+  private subscribeUpdate<T>(eventName: string, subscribeKey: string, callback: (data: T) => void): () => void {
+    if (!this.socket) {
+      throw new Error('Not connected to robot');
+    }
+
+    const handler = (data: any) => {
+      console.log(`Received update for ${eventName}:`, data);
+      callback(data as T);
+    };
+
+    this.socket.on(eventName, handler);
+    this.socket.emit('subscribe_updates', { updates: { [subscribeKey]: true } });
+
+    // Return unsubscribe function
+    return () => {
+      this.socket?.off(eventName, handler);
+      this.socket?.emit('subscribe_updates', { updates: { [subscribeKey]: false } });
+    };
+  }
+
+  subscribeModeChange(callback: (mode: RobotMode) => void): () => void {
+    return this.subscribeUpdate<{ mode: RobotMode }>(
+      'mode_changed',
+      'mode_changed',
+      (data) => {
+        if (data?.mode) {
+          callback(data.mode);
+        }
+      }
+    );
+  }
+
+  subscribeGoalColorChange(callback: (goalColor: 'yellow' | 'blue') => void): () => void {
+    return this.subscribeUpdate<{ goal_color: 'yellow' | 'blue' }>(
+      'goal_color_changed',
+      'goal_color_changed',
+      (data) => {
+        if (data?.goal_color) {
+          callback(data.goal_color);
+        }
+      }
+    );
+  }
+
+  subscribeImportantSensorDataChange(callback: (data: SensorData) => void): () => void {
+    return this.subscribeUpdate<SensorData>(
+      'important_sensor_data_changed',
+      'important_sensor_data_changed',
+      (data) => {
+        if (data) {
+          callback(data);
+        }
+      }
+    );
+  }
+
+  subscribeNewLogs(callback: (logs: LogsBatch) => void): () => void {
+    return this.subscribeUpdate<LogsBatch>(
+      'new_logs',
+      'new_logs',
+      (data) => {
+        if (data) {
+          callback(data);
+        }
+      }
+    );
   }
 
   // ============ Video Streaming ============

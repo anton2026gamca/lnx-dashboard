@@ -7,7 +7,7 @@
 import { useEffect, useCallback, useState } from 'react';
 import { robotClient } from '@/lib/robotAPIClient';
 import { useRobot } from '@/context/RobotContext';
-import { SensorData, RobotMode, LogEntry, DetectedObject } from '@/types/robot';
+import { SensorData, RobotMode, LogEntry, DetectedObject, LogsBatch } from '@/types/robot';
 
 /**
  * Hook to fetch sensor data periodically
@@ -18,6 +18,19 @@ export const useSensorData = (interval: number = 500) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const fetchData = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const data = await robotClient.getSensorData();
+      setSensorData(data);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to fetch sensor data');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
     if (!connectionState.isConnected) {
       if (sensorData !== null) {
@@ -26,22 +39,15 @@ export const useSensorData = (interval: number = 500) => {
       return;
     }
 
-    const fetchData = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-        const data = await robotClient.getSensorData();
-        setSensorData(data);
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'Failed to fetch sensor data');
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchData();
+  
+    const unsubscribe = robotClient.subscribeImportantSensorDataChange((data: SensorData) => setSensorData(data));
+
     const timer = setInterval(fetchData, interval);
-    return () => clearInterval(timer);
+    return () => {
+      clearInterval(timer);
+      unsubscribe();
+    };
   }, [connectionState.isConnected, interval]);
 
   return { sensorData, loading, error };
@@ -63,6 +69,7 @@ export const useRobotMode = () => {
         return;
       }
       setMode(currentMode);
+      console.log('Fetched mode:', currentMode);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to fetch mode');
     }
@@ -87,14 +94,19 @@ export const useRobotMode = () => {
   );
 
   useEffect(() => {
+    if (!connectionState.isConnected) return;
+
     fetchMode();
-  }, [fetchMode]);
+
+    const unsubscribe = robotClient.subscribeModeChange((mode: RobotMode) => setMode(mode));
+    return () => unsubscribe();
+  }, [connectionState.isConnected, fetchMode]);
 
   return { mode, loading, error, changeMode, fetchMode };
 };
 
 /**
- * Hook to fetch target goal
+ * Hook to fetch target goal with real-time sync
  */
 export const useTargetGoal = () => {
   const { connectionState } = useRobot();
@@ -117,10 +129,14 @@ export const useTargetGoal = () => {
   }, [connectionState.isConnected]);
 
   useEffect(() => {
+    if (!connectionState.isConnected) return;
+
     fetchTargetGoal();
-    const timer = setInterval(fetchTargetGoal, 5000);
-    return () => clearInterval(timer);
-  }, [fetchTargetGoal]);
+
+    const unsubscribe = robotClient.subscribeGoalColorChange((goal: 'yellow' | 'blue') => setTargetGoal(goal));
+    
+    return () => unsubscribe();
+  }, [connectionState.isConnected, fetchTargetGoal]);
   
   return { targetGoal, refresh: fetchTargetGoal };
 };
@@ -210,49 +226,44 @@ export const useManualControl = () => {
 };
 
 /**
- * Hook to subscribe to real-time updates
- * Uses Socket.IO event listeners instead of polling for more efficient updates
- */
-export const useUpdateSubscriptions = () => {
+  * Hook to fetch logs with real-time updates
+  */
+export const useLogs = () => {
   const { connectionState } = useRobot();
-  const [sensorUpdates, setSensorUpdates] = useState<SensorData | null>(null);
-  const [logsUpdates, setLogsUpdates] = useState<LogEntry[]>([]);
-  const [detectionUpdates, setDetectionUpdates] = useState<DetectedObject[]>([]);
+  const [logs, setLogs] = useState<LogEntry[]>([]);
 
   useEffect(() => {
     if (!connectionState.isConnected) {
-      setSensorUpdates(null);
-      setLogsUpdates([]);
-      setDetectionUpdates([]);
+      setLogs([]);
       return;
     }
+    
+    const fetchLogs = async () => {
+      try {
+        const logBatch = await robotClient.getLogs();
+        if (logBatch) {
+          setLogs(logBatch?.logs || []);
+        }
+      }
+      catch (err) {
+        console.error('Failed to fetch logs:', err);
+        setLogs([]);
+      }
+    }
 
-    const handleSensorUpdate = (data: SensorData) => {
-      setSensorUpdates(data);
-    };
-
-    const handleLogUpdate = (entry: LogEntry) => {
-      setLogsUpdates((prev) => [...prev, entry].slice(-100));
-    };
-
-    const handleDetectionUpdate = (detections: DetectedObject[]) => {
-      setDetectionUpdates(detections);
-    };
-
-    robotClient.on('sensor_update', handleSensorUpdate);
-    robotClient.on('log_entry', handleLogUpdate);
-    robotClient.on('detections_update', handleDetectionUpdate);
-
-    robotClient.on('connect', () => {
-      robotClient.on('sensor_update', handleSensorUpdate);
+    fetchLogs();
+    
+    const unsubscribe = robotClient.subscribeNewLogs((data: LogsBatch) => {
+      setLogs(prev => [...prev, ...(data.logs || [])]);
     });
-
+    
     return () => {
-      robotClient.off('sensor_update', handleSensorUpdate);
-      robotClient.off('log_entry', handleLogUpdate);
-      robotClient.off('detections_update', handleDetectionUpdate);
-    };
-  }, [connectionState.isConnected]);
+      unsubscribe();
+      setLogs([]);
+    }
+  }
+  , [connectionState.isConnected]);
 
-  return { sensorUpdates, logsUpdates, detectionUpdates };
-};
+  return logs;
+}
+
