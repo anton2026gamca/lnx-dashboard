@@ -44,7 +44,7 @@ export interface SensorData {
   };
   line?: {
     raw: number[];
-    detected: boolean;
+    detected: boolean[];
     thresholds: number[][];
   };
   motors?: number[];
@@ -69,6 +69,49 @@ export interface SensorData {
     confidence: number;
   };
   timestamp?: number;
+}
+
+export interface FormattedSensorData {
+  compass: {
+    heading: string;
+    pitch: string;
+    roll: string;
+  };
+  ir_ball: {
+    angle: string;
+    distance: string;
+    detected: boolean;
+  };
+  camera_ball: {
+    detected: string;
+    angle: string;
+    distance: string;
+  };
+  line: {
+    detected: string[];
+    raw: string[];
+    thresholds: string[];
+  };
+  motors: string[];
+  goal: {
+    detected: boolean;
+    alignment: string;
+    center_x: string;
+    area: string;
+    distance: string;
+    height: string;
+  };
+  position: {
+    x: string;
+    y: string;
+    confidence: string;
+  };
+  running_state: {
+    running: boolean;
+    bt_module_enabled: boolean;
+    bt_module_state: boolean;
+    switch_state: boolean;
+  };
 }
 
 export interface MotorSettings {

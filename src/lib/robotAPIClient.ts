@@ -3,7 +3,7 @@
  */
 
 import io, { Socket } from 'socket.io-client';
-import { RobotConnection, RobotMode, SensorData, MotorSettings, GoalSettings, AutonomousSettings, LogEntry, LogsBatch, DetectedObject } from '@/types/robot';
+import { RobotConnection, RobotMode, SensorData, MotorSettings, GoalSettings, AutonomousSettings, LogsBatch, DetectedObject } from '@/types/robot';
 
 export class RobotAPIClient {
   private socket: Socket | null = null;
@@ -80,43 +80,46 @@ export class RobotAPIClient {
   /**
    * Get sensor data
    */
-  async getSensorData(): Promise<SensorData> {
+  async getSensorData(): Promise<SensorData | null> {
     return this._emit('get_sensor_data', {});
   }
 
   /**
    * Get current robot mode
    */
-  async getMode(): Promise<RobotMode> {
+  async getMode(): Promise<RobotMode | null> {
     const response = await this._emit('get_mode', {});
+    if (!response?.mode) {
+      return null;
+    }
     return response.mode as RobotMode;
   }
 
   /**
    * Get logs
    */
-  async getLogs(since: number = 0): Promise<LogsBatch> {
+  async getLogs(since: number = 0): Promise<LogsBatch | null> {
     return this._emit('get_logs', { since });
   }
 
   /**
    * Get motor settings
    */
-  async getMotorSettings(): Promise<MotorSettings> {
+  async getMotorSettings(): Promise<MotorSettings | null> {
     return this._emit('get_motor_settings', {});
   }
 
   /**
    * Get goal settings
    */
-  async getGoalSettings(): Promise<GoalSettings> {
+  async getGoalSettings(): Promise<GoalSettings | null> {
     return this._emit('get_goal_settings', {});
   }
 
   /**
    * Get autonomous mode settings
    */
-  async getAutonomousSettings(): Promise<AutonomousSettings> {
+  async getAutonomousSettings(): Promise<AutonomousSettings | null> {
     const response = await this._emit('get_autonomous_settings', {});
     return response.current_state_machine || null;
   }
@@ -126,7 +129,7 @@ export class RobotAPIClient {
    */
   async getAllStateMachines(): Promise<string[]> {
     const response = await this._emit('get_all_state_machines', {});
-    return response.state_machines || [];
+    return response?.state_machines || [];
   }
 
   /**
@@ -134,7 +137,7 @@ export class RobotAPIClient {
    */
   async getDetections(): Promise<DetectedObject[]> {
     const response = await this._emit('get_detections', {});
-    return response.detections || [];
+    return response?.detections || [];
   }
 
   // ============ Control Methods ============
@@ -207,7 +210,7 @@ export class RobotAPIClient {
     min_values: number[];
     max_values: number[];
     can_start_phase2: boolean;
-  }> {
+  } | null> {
     return this._emit('stop_line_calibration', {});
   }
 
@@ -225,7 +228,7 @@ export class RobotAPIClient {
     phase: number;
     min_values: number[];
     max_values: number[];
-  }> {
+  } | null> {
     return this._emit('get_line_calibration_status', {});
   }
 
@@ -233,7 +236,7 @@ export class RobotAPIClient {
    * Calibrate ball detection distance
    * @param knownDistanceMm - Known distance in millimeters
    */
-  async calibrateBallDistance(knownDistanceMm: number): Promise<{ calibration_constant: number }> {
+  async calibrateBallDistance(knownDistanceMm: number): Promise<{ calibration_constant: number } | null> {
     return this._emit('camera_ball_distance_calibration', { known_distance_mm: knownDistanceMm });
   }
 
@@ -243,7 +246,7 @@ export class RobotAPIClient {
   async getBallCalibration(): Promise<{
     calibration_constant: number;
     distance_offset: number;
-  }> {
+  } | null> {
     return this._emit('get_ball_calibration', {});
   }
 
@@ -268,7 +271,7 @@ export class RobotAPIClient {
   async stopGoalDistanceCalibration(): Promise<{
     focal_length?: number;
     message?: string;
-  }> {
+  } | null> {
     return this._emit('stop_goal_distance_calibration', {});
   }
 
@@ -285,14 +288,14 @@ export class RobotAPIClient {
   async getGoalDistanceCalibrationStatus(): Promise<{
     calibrating: boolean;
     distance_offset: number;
-  }> {
+  } | null> {
     return this._emit('get_goal_distance_calibration_status', {});
   }
 
   /**
    * Get goal focal length
    */
-  async getGoalFocalLength(): Promise<{ focal_length: number }> {
+  async getGoalFocalLength(): Promise<{ focal_length: number } | null> {
     return this._emit('get_goal_focal_length', {});
   }
 
@@ -309,15 +312,12 @@ export class RobotAPIClient {
    * @param regions - Array of regions with x, y, width, height
    */
   async computeHsvFromRegions(
-    regions: Array<{ x: number; y: number; width: number; height: number }>,
+    regions: Array<{x: number; y: number; width: number; height: number}>
   ): Promise<{
-    h_min: number;
-    h_max: number;
-    s_min: number;
-    s_max: number;
-    v_min: number;
-    v_max: number;
-  }> {
+    h_min: number; h_max: number;
+    s_min: number; s_max: number;
+    v_min: number; v_max: number;
+  } | null> {
     return this._emit('compute_hsv_from_regions', { regions });
   }
 
@@ -372,7 +372,7 @@ export class RobotAPIClient {
   private _emit(event: string, data: any = {}): Promise<any> {
     return new Promise((resolve, reject) => {
       if (!this.socket || !this.socket.connected) {
-        reject(new Error('Not connected to robot'));
+        resolve(null);
         return;
       }
 

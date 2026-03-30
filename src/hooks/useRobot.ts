@@ -57,10 +57,11 @@ export const useRobotMode = () => {
   const [error, setError] = useState<string | null>(null);
 
   const fetchMode = useCallback(async () => {
-    if (!connectionState.isConnected) return;
-
     try {
       const currentMode = await robotClient.getMode();
+      if (currentMode === null) {
+        return;
+      }
       setMode(currentMode);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to fetch mode');
@@ -107,7 +108,7 @@ export const useTargetGoal = () => {
     
     try {
       const goal = await robotClient.getGoalSettings();
-      setTargetGoal(goal.goal_color || null);
+      setTargetGoal(goal?.goal_color || null);
     }
     catch (err) {
       console.error('Failed to fetch target goal:', err);

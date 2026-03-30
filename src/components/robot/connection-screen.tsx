@@ -6,8 +6,8 @@
 
 import React, { useState } from 'react';
 import { useRobot } from '@/context/RobotContext';
-import { RobotConnectionForm } from '@/components/RobotConnectionForm';
-import { SavedRobotsList } from '@/components/SavedRobotsList';
+import { RobotConnectionForm } from '@/components/robot/connection-form';
+import { SavedRobotsList } from '@/components/robot/saved-robots-list';
 import { RobotConnection } from '@/types/robot';
 
 export const RobotConnectionScreen: React.FC = () => {

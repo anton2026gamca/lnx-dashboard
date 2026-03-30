@@ -2,7 +2,7 @@
  * Robot utilities and helpers
  */
 
-import { SensorData } from '@/types/robot';
+import { FormattedSensorData, SensorData } from '@/types/robot';
 
 /**
  * Validate IP address format
@@ -30,36 +30,38 @@ export const validatePort = (port: number): boolean => {
 /**
  * Format sensor data for display
  */
-export const formatSensorData = (data: SensorData): Record<string, any> => {
+export const formatSensorData = (data: SensorData | null): FormattedSensorData => {
   return {
-    compass: data.compass
+    compass: data?.compass
       ? {
           heading: `${normalizeAngle(data.compass.heading).toFixed(1)}°`,
           pitch: `${normalizeAngle(data.compass.pitch).toFixed(1)}°`,
           roll: `${normalizeAngle(data.compass.roll).toFixed(1)}°`,
         }
-      : null,
-    ir_ball: data.ir
+      : { heading: '---', pitch: '---', roll: '---' },
+    ir_ball: data?.ir
       ? {
           angle: `${normalizeAngle(data.ir.angle).toFixed(1)}°`,
           distance: `${data.ir.distance.toFixed(0)}mm`,
           detected: data.ir.angle !== null && data.ir.distance !== null && data.ir.angle !== 999 && data.ir.distance !== 0,
         }
-      : null,
-    camera_ball: data.camera_ball
+      : { angle: '---', distance: '---', detected: false },
+    camera_ball: data?.camera_ball
       ? {
           detected: data.camera_ball.detected ? 'Yes' : 'No',
           angle: data.camera_ball.angle ? `${normalizeAngle(data.camera_ball.angle).toFixed(1)}°` : 'N/A',
           distance: data.camera_ball.distance ? `${data.camera_ball.distance.toFixed(0)}mm` : 'N/A',
         }
-      : null,
-    line: data.line ? {
-      detected: data.line.detected ? 'Yes' : 'No',
-      raw: data.line.raw.map((v, _) => `${(v / 1000 * 100).toFixed(0)}`),
-      thresholds: data.line.thresholds.map((t, _) => `${t[0]}-${t[1]}`),
-    } : null,
-    motors: data.motors ? data.motors.map((m, _) => `${(m / 255 * 100).toFixed(0)}%`) : null,
-    goal: data.goal_detection
+      : { detected: 'No', angle: '---', distance: '---' },
+    line: data?.line
+      ? {
+          detected: data.line.detected.map(d => d ? 'Yes' : 'No'),
+          raw: data.line.raw.map((v, _) => `${(v / 1000 * 100).toFixed(0)}`),
+          thresholds: data.line.thresholds.map((t, _) => `${t[0]}-${t[1]}`),
+        }
+      : { detected: new Array(12).fill('No'), raw: new Array(12).fill(''), thresholds: new Array(12).fill('__-__') },
+    motors: data?.motors ? data.motors.map((m, _) => `${(m / 255 * 100).toFixed(0)}%`) : ['--', '--', '--', '--'],
+    goal: data?.goal_detection
       ? {
           detected: data.goal_detection.detected,
           alignment: `${(data.goal_detection.alignment * 100).toFixed(1)}%`,
@@ -69,14 +71,14 @@ export const formatSensorData = (data: SensorData): Record<string, any> => {
           height: data.goal_detection.height_pixels !== null ? `${data.goal_detection.height_pixels.toFixed(0)}px` : 'N/A',
         }
       : { detected: false, alignment: 'N/A', center_x: 'N/A', area: '0px²', distance: 'N/A', height: 'N/A' },
-    position: data.position_estimate
+    position: data?.position_estimate
       ? {
           x: data.position_estimate.x_mm !== null ? `${data.position_estimate.x_mm.toFixed(0)}mm` : '---',
           y: data.position_estimate.y_mm !== null ? `${data.position_estimate.y_mm.toFixed(0)}mm` : '---',
           confidence: `${(data.position_estimate.confidence * 100).toFixed(1)}%`,
         }
-      : { x: '---', y: '---', confidence: '0%' },
-    running_state: data.running_state
+      : { x: '---', y: '---', confidence: '---' },
+    running_state: data?.running_state
       ? {
           running: data.running_state.running,
           bt_module_enabled: data.running_state.bt_module_enabled,
