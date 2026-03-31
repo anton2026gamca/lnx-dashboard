@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { JetBrains_Mono } from "next/font/google";
 import { RobotProvider } from "@/context/RobotContext";
 import "./globals.css";
+import { ThemeProvider } from "next-themes";
 
 
 const jetBrainsMono = JetBrains_Mono({
@@ -24,11 +25,14 @@ export default function RootLayout({
     <html
       lang="en"
       className={`${jetBrainsMono.className} h-full antialiased`}
+      suppressHydrationWarning
     >
       <body className="min-h-full flex flex-col bg-white dark:bg-black">
-        <RobotProvider>
-          {children}
-        </RobotProvider>
+        <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+          <RobotProvider>
+            {children}
+          </RobotProvider>
+        </ThemeProvider>
       </body>
     </html>
   );
