@@ -44,7 +44,7 @@ export const MotorSettingsMenu: React.FC = () => {
   };
 
   return (
-    <div className="relative p-2 grid gap-x-4 gap-y-1 grid-cols-1 lg:grid-cols-2">
+    <div className="relative p-2 grid gap-x-2 gap-y-1 grid-cols-1 lg:grid-cols-3">
       {error
         ? <div className="lg:col-span-2 mb-1 p-1 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-md">
             <p className="text-sm text-red-700 dark:text-red-400">{error}</p>
@@ -58,8 +58,8 @@ export const MotorSettingsMenu: React.FC = () => {
           </div>
         : null}
 
-      <div className="flex items-center justify-between">
-        <label className="text-xs text-main-200">Rotation Correction</label>
+      <div className="flex items-center justify-between border-2 dark:border-main-700 px-2">
+        <label className="text-xs text-white">Rotation Correction</label>
         <Button
           onClick={() => updateSetting('rotation_correction_enabled', !settings.rotation_correction_enabled)}
           activeClass='bg-green-600 hover:bg-green-700 text-white'
@@ -70,8 +70,8 @@ export const MotorSettingsMenu: React.FC = () => {
         </Button>
       </div>
 
-      <div className="flex items-center justify-between">
-        <label className="text-xs text-main-200">Line Avoiding</label>
+      <div className="flex items-center justify-between border-2 dark:border-main-700 px-2">
+        <label className="text-xs text-white">Line Avoiding</label>
         <Button
           onClick={() => updateSetting('line_avoiding_enabled', !settings.line_avoiding_enabled)}
           activeClass='bg-green-600 hover:bg-green-700 text-white'
@@ -82,8 +82,8 @@ export const MotorSettingsMenu: React.FC = () => {
         </Button>
       </div>
 
-      <div className="flex items-center justify-between">
-        <label className="text-xs text-main-200">Position Based Speed</label>
+      <div className="flex items-center justify-between border-2 dark:border-main-700 px-2">
+        <label className="text-xs text-white">Position Based Speed</label>
         <Button
           onClick={() => updateSetting('position_based_speed_enabled', !settings.position_based_speed_enabled)}
           activeClass='bg-green-600 hover:bg-green-700 text-white'
@@ -91,18 +91,6 @@ export const MotorSettingsMenu: React.FC = () => {
           className="min-w-20"
         >
           {settings.position_based_speed_enabled ? 'ON' : 'OFF'}
-        </Button>
-      </div>
-
-      <div className="flex items-center justify-between">
-        <label className="text-xs text-main-200">Camera Ball Usage</label>
-        <Button
-          onClick={() => updateSetting('camera_ball_usage_enabled', !settings.camera_ball_usage_enabled)}
-          activeClass='bg-green-600 hover:bg-green-700 text-white'
-          active={settings.camera_ball_usage_enabled}
-          className="min-w-20"
-        >
-          {settings.camera_ball_usage_enabled ? 'ON' : 'OFF'}
         </Button>
       </div>
     </div>

@@ -16,7 +16,7 @@ import { SensorPanel } from './sensor-panel';
 // ============= Sub-components =============
 
 const PanelContainer: React.FC<{ className: string; children: React.ReactNode }> = ({ className, children }) => (
-  <div className={cn("w-full bg-white dark:bg-main-950 border-solid border-2 dark:border-main-900 overflow-y-auto", className)}>
+  <div className={cn("w-full bg-main-100 dark:bg-main-950 border-solid border-2 dark:border-main-900 overflow-y-auto", className)}>
     {children}
   </div>
 );

@@ -112,7 +112,7 @@ const FieldVisualizer: React.FC<FieldVisualizerProps> = ({
 
   return (
     <div className="flex items-center justify-center">
-      <div className="flex flex-col gap-2 items-center justify-center break-keep text-xs text-main-600 dark:text-main-400 text-nowrap">
+      <div className="flex flex-col gap-2 items-center justify-center break-keep text-nowrap">
         <SensorProperty label="X (mm)"     inline={true} value={robotX !== null ? robotX.toFixed(0) : '---'} />
         <SensorProperty label="Y (mm)"     inline={true} value={robotY !== null ? robotY.toFixed(0) : '---'} />
         <SensorProperty label="Confidence" inline={true} value={confidence !== null && confidence !== undefined ? confidence : '---'} />

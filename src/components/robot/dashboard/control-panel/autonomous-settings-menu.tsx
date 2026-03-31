@@ -54,7 +54,7 @@ export const AutonomousSettingsMenu: React.FC = () => {
   };
 
   return (
-    <div className="relative p-2 grid gap-x-4 gap-y-1 grid-cols-1 lg:grid-cols-2">
+    <div className="relative p-2 grid gap-x-2 gap-y-1 grid-cols-1 lg:grid-cols-3">
       {error
         ? <div className="lg:col-span-2 mb-1 p-1 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-md">
             <p className="text-sm text-red-700 dark:text-red-400">{error}</p>
@@ -73,7 +73,7 @@ export const AutonomousSettingsMenu: React.FC = () => {
       <select
         value={settings.state_machine || ''}
         onChange={(e) => updateSetting('state_machine', e.target.value || null)}
-        className="text-xs bg-main-800 text-white border border-main-700 rounded px-1"
+        className="text-xs bg-main-800 text-white border border-main-700 px-1"
       >
         <option value="" className='hidden'></option>
         {stateMachines.map((sm) => (
@@ -83,8 +83,8 @@ export const AutonomousSettingsMenu: React.FC = () => {
         ))}
       </select>
 
-      <div className="flex items-center justify-between">
-        <label className="text-xs text-main-200">Face Goal/North</label>
+      <div className="flex items-center justify-between border-2 dark:border-main-700 px-2">
+        <label className="text-xs text-white">Face Goal/North</label>
         <Button
           onClick={() => updateSetting('always_face_goal_enabled', !settings.always_face_goal_enabled)}
           activeClass='bg-green-600 hover:bg-green-700 text-white'
@@ -92,6 +92,18 @@ export const AutonomousSettingsMenu: React.FC = () => {
           className="min-w-20"
         >
           {settings.always_face_goal_enabled ? 'GOAL' : 'NORTH'}
+        </Button>
+      </div>
+
+      <div className="flex items-center justify-between border-2 dark:border-main-700 px-2">
+        <label className="text-xs text-white">Camera Ball Usage</label>
+        <Button
+          onClick={() => updateSetting('camera_ball_usage_enabled', !settings.camera_ball_usage_enabled)}
+          activeClass='bg-green-600 hover:bg-green-700 text-white'
+          active={settings.camera_ball_usage_enabled}
+          className="min-w-20"
+        >
+          {settings.camera_ball_usage_enabled ? 'ON' : 'OFF'}
         </Button>
       </div>
     </div>

@@ -14,7 +14,7 @@ export const CameraPanel: React.FC = () => {
 
   return (
     <div>
-      <div className="bg-white dark:bg-main-950 p-1 flex gap-2 items-center">
+      <div className="p-1 flex gap-2 items-center">
         <Button
           onClick={() => setVideoEnabled(!videoEnabled)}
           activeClass={`${videoEnabled ? 'bg-lime-600' : 'bg-main-900'} hover:${videoEnabled ? 'bg-lime-700' : 'bg-main-800'} text-white`}

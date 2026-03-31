@@ -118,7 +118,6 @@ export interface MotorSettings {
   rotation_correction_enabled?: boolean;
   line_avoiding_enabled?: boolean;
   position_based_speed_enabled?: boolean;
-  camera_ball_usage_enabled?: boolean;
 }
 
 export interface GoalSettings {
@@ -138,6 +137,7 @@ export interface GoalSettings {
 export interface AutonomousSettings {
   state_machine?: string | null;
   always_face_goal_enabled?: boolean;
+  camera_ball_usage_enabled?: boolean;
 }
 
 export interface LogEntry {

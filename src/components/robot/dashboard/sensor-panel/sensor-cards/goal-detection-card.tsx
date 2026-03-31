@@ -9,7 +9,7 @@ export const GoalDetectionCard: React.FC<{ fdata: FormattedSensorData, targetGoa
   <SensorCard label="Goal Detection">
     <div className="space-y-2 text-xs">
       <div className="flex justify-between items-center">
-        <span className="text-main-600 dark:text-main-400">Target Goal:</span>
+        <span>Target Goal:</span>
         <span className={`px-2 font-bold ${
           targetGoal === 'yellow'
             ? 'bg-yellow-500 text-black'
@@ -19,7 +19,7 @@ export const GoalDetectionCard: React.FC<{ fdata: FormattedSensorData, targetGoa
         </span>
       </div>
       <div className="flex justify-between items-center">
-        <span className="text-main-600 dark:text-main-400">Detected:</span>
+        <span>Detected:</span>
         <div className={`px-2 font-bold ${
           fdata?.goal.detected 
             ? 'bg-green-600 text-white' 
@@ -29,23 +29,23 @@ export const GoalDetectionCard: React.FC<{ fdata: FormattedSensorData, targetGoa
         </div>
       </div>
       <div className="flex justify-between pt-1 border-t border-main-700">
-        <span className="text-main-600 dark:text-main-400">Alignment:</span>
+        <span>Alignment:</span>
         <span className="font-mono text-green-500">{fdata.goal.alignment}</span>
       </div>
       <div className="flex justify-between">
-        <span className="text-main-600 dark:text-main-400">Center X:</span>
+        <span>Center X:</span>
         <span className="font-mono text-green-500">{fdata.goal.center_x}</span>
       </div>
       <div className="flex justify-between">
-        <span className="text-main-600 dark:text-main-400">Area:</span>
+        <span>Area:</span>
         <span className="font-mono text-green-500">{fdata.goal.area}</span>
       </div>
       <div className="flex justify-between">
-        <span className="text-main-600 dark:text-main-400">Height:</span>
+        <span>Height:</span>
         <span className="font-mono text-green-500">{fdata.goal.height}</span>
       </div>
       <div className="flex justify-between pt-1 border-t border-main-700">
-        <span className="text-main-600 dark:text-main-400">Distance:</span>
+        <span>Distance:</span>
         <span className="font-mono text-blue-500">{fdata.goal.distance}</span>
       </div>
     </div>

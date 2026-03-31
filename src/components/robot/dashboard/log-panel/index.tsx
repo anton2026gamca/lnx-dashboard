@@ -44,7 +44,7 @@ export const LogPanel: React.FC = () => {
     info: 'text-lime-600',
     warning: 'text-yellow-500',
     error: 'text-red-500',
-    critical: 'text-main-950 bg-red-500',
+    critical: 'text-black bg-red-500',
   };
 
   const levelButtonMap: Record<string, string> = {

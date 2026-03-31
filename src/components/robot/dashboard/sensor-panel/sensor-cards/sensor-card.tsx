@@ -10,7 +10,7 @@ interface SensorCardProps {
 }
 
 export const SensorCard: React.FC<SensorCardProps> = ({ label, children, className }) => (
-  <div className={cn("relative col-span-2 h-full flex flex-col bg-white dark:bg-main-950 p-2 shadow-sm outline-2 dark:outline-main-800 text-sm text-main-950 dark:text-main-400", className)}>
+  <div className={cn("relative col-span-2 h-full flex flex-col bg-main-100 dark:bg-main-950 p-2 shadow-sm outline-2 dark:outline-main-800 text-sm text-main-800 dark:text-main-400", className)}>
     <h3 className="text-xs font-bold text-main-900 dark:text-white uppercase mb-2">{label}</h3>
     <div className="flex-1 flex flex-col justify-center gap-2">
       {children}
@@ -43,7 +43,7 @@ export const SensorProperty: React.FC<SensorPropertyProps> = ({ label, value, no
 interface AngleIndicatorProps {
   angle: number;
   enabled: boolean;
-  className: string;
+  className?: string;
 }
 
 export const AngleIndicator: React.FC<AngleIndicatorProps> = ({ angle, enabled, className }) => (

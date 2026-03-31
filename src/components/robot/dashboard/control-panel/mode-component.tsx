@@ -14,7 +14,6 @@ export const ModeComponent: React.FC = () => {
   const { mode, changeMode, loading } = useRobotMode();
   const [localMode, setLocalMode] = useState<RobotMode>(mode);
 
-  // Subscribe to real-time mode updates from robot
   useEffect(() => {
     const handleModeUpdate = (data: any) => {
       if (data?.mode) {
@@ -29,7 +28,6 @@ export const ModeComponent: React.FC = () => {
     };
   }, []);
 
-  // Sync local mode with hook mode
   useEffect(() => {
     setLocalMode(mode);
   }, [mode]);
@@ -51,7 +49,7 @@ export const ModeComponent: React.FC = () => {
       <h3 className="text-xs font-bold text-white uppercase mb-2">Mode</h3>
       <div className="grid grid-cols-3 gap-1">
         <Button
-          activeClass='bg-blue-500 hover:bg-blue-600 text-white'
+          activeClass='bg-main-200 hover:bg-main-200 text-black'
           active={localMode === 'idle'}
           onClick={() => !loading && handleModeChange('idle')}
           className={getButtonClass(loading)}
@@ -59,7 +57,7 @@ export const ModeComponent: React.FC = () => {
           Idle
         </Button>
         <Button
-          activeClass='bg-blue-500 hover:bg-blue-600 text-white'
+          activeClass='bg-main-200 hover:bg-main-200 text-black'
           active={localMode === 'autonomous'}
           onClick={() => !loading && handleModeChange('autonomous')}
           className={getButtonClass(loading)}
@@ -67,7 +65,7 @@ export const ModeComponent: React.FC = () => {
           Autonomous
         </Button>
         <Button
-          activeClass='bg-blue-500 hover:bg-blue-600 text-white'
+          activeClass='bg-main-200 hover:bg-main-200 text-black'
           active={localMode === 'manual'}
           onClick={() => !loading && handleModeChange('manual')}
           className={getButtonClass(loading)}
