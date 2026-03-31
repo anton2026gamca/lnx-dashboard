@@ -5,9 +5,10 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { Button } from '@/components/ui/button';
 import { robotClient } from '@/lib/robotAPIClient';
 import { AutonomousSettings } from '@/types/robot';
+import { SettingsToggle } from '@/components/ui/settings-toggle';
+import { Button } from '@/components/ui/button';
 
 export const AutonomousSettingsMenu: React.FC = () => {
   const [settings, setSettings] = useState<AutonomousSettings>({});
@@ -83,29 +84,19 @@ export const AutonomousSettingsMenu: React.FC = () => {
         ))}
       </select>
 
-      <div className="flex items-center justify-between border-2 dark:border-main-700 px-2">
-        <label className="text-xs text-white">Face Goal/North</label>
-        <Button
-          onClick={() => updateSetting('always_face_goal_enabled', !settings.always_face_goal_enabled)}
-          activeClass='bg-green-600 hover:bg-green-700 text-white'
-          active={settings.always_face_goal_enabled}
-          className="min-w-20"
-        >
-          {settings.always_face_goal_enabled ? 'GOAL' : 'NORTH'}
-        </Button>
-      </div>
+      <SettingsToggle
+        label="Face Goal/North"
+        value={settings.always_face_goal_enabled}
+        onChange={(value) => updateSetting('always_face_goal_enabled', value)}
+        onLabel="GOAL"
+        offLabel="NORTH"
+      />
 
-      <div className="flex items-center justify-between border-2 dark:border-main-700 px-2">
-        <label className="text-xs text-white">Camera Ball Usage</label>
-        <Button
-          onClick={() => updateSetting('camera_ball_usage_enabled', !settings.camera_ball_usage_enabled)}
-          activeClass='bg-green-600 hover:bg-green-700 text-white'
-          active={settings.camera_ball_usage_enabled}
-          className="min-w-20"
-        >
-          {settings.camera_ball_usage_enabled ? 'ON' : 'OFF'}
-        </Button>
-      </div>
+      <SettingsToggle
+        label="Camera Ball Usage"
+        value={settings.camera_ball_usage_enabled}
+        onChange={(value) => updateSetting('camera_ball_usage_enabled', value)}
+      />
     </div>
   );
 };

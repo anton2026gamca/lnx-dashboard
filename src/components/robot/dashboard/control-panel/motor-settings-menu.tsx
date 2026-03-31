@@ -5,9 +5,9 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { Button } from '@/components/ui/button';
 import { robotClient } from '@/lib/robotAPIClient';
 import { MotorSettings } from '@/types/robot';
+import { SettingsToggle } from '@/components/ui/settings-toggle';
 
 export const MotorSettingsMenu: React.FC = () => {
   const [settings, setSettings] = useState<MotorSettings>({});
@@ -58,41 +58,23 @@ export const MotorSettingsMenu: React.FC = () => {
           </div>
         : null}
 
-      <div className="flex items-center justify-between border-2 dark:border-main-700 px-2">
-        <label className="text-xs text-white">Rotation Correction</label>
-        <Button
-          onClick={() => updateSetting('rotation_correction_enabled', !settings.rotation_correction_enabled)}
-          activeClass='bg-green-600 hover:bg-green-700 text-white'
-          active={settings.rotation_correction_enabled}
-          className="min-w-20"
-        >
-          {settings.rotation_correction_enabled ? 'ON' : 'OFF'}
-        </Button>
-      </div>
+      <SettingsToggle
+        label="Rotation Correction"
+        value={settings.rotation_correction_enabled}
+        onChange={(value) => updateSetting('rotation_correction_enabled', value)}
+      />
 
-      <div className="flex items-center justify-between border-2 dark:border-main-700 px-2">
-        <label className="text-xs text-white">Line Avoiding</label>
-        <Button
-          onClick={() => updateSetting('line_avoiding_enabled', !settings.line_avoiding_enabled)}
-          activeClass='bg-green-600 hover:bg-green-700 text-white'
-          active={settings.line_avoiding_enabled}
-          className="min-w-20"
-        >
-          {settings.line_avoiding_enabled ? 'ON' : 'OFF'}
-        </Button>
-      </div>
+      <SettingsToggle
+        label="Line Avoiding"
+        value={settings.line_avoiding_enabled}
+        onChange={(value) => updateSetting('line_avoiding_enabled', value)}
+      />
 
-      <div className="flex items-center justify-between border-2 dark:border-main-700 px-2">
-        <label className="text-xs text-white">Position Based Speed</label>
-        <Button
-          onClick={() => updateSetting('position_based_speed_enabled', !settings.position_based_speed_enabled)}
-          activeClass='bg-green-600 hover:bg-green-700 text-white'
-          active={settings.position_based_speed_enabled}
-          className="min-w-20"
-        >
-          {settings.position_based_speed_enabled ? 'ON' : 'OFF'}
-        </Button>
-      </div>
+      <SettingsToggle
+        label="Position Based Speed"
+        value={settings.position_based_speed_enabled}
+        onChange={(value) => updateSetting('position_based_speed_enabled', value)}
+      />
     </div>
   );
 };
