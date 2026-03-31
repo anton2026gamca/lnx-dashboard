@@ -51,11 +51,11 @@ export const TargetGoalComponent: React.FC = () => {
   const getButtonClass = (isLoading: boolean) => isLoading ? 'opacity-50 cursor-not-allowed' : '';
 
   return (
-    <div className="bg-main-900 p-2">
-      <h3 className="text-xs font-bold text-white uppercase mb-2">Target Goal</h3>
+    <div className="bg-main-200 dark:bg-main-900 border border-main-300 dark:border-main-800 p-2">
+      <h3 className="text-xs font-bold text-main-900 dark:text-white uppercase mb-2">Target Goal</h3>
       <div className="grid grid-cols-2 gap-1">
         <Button
-          activeClass='bg-yellow-500 hover:bg-yellow-600 text-black'
+          activeClass='bg-yellow-500 hover:bg-yellow-500 text-black dark:bg-yellow-500 dark:hover:bg-yellow-500 dark:text-black'
           active={localGoal === 'yellow'}
           onClick={() => !loading && setGoalColor('yellow')}
           className={getButtonClass(loading)}
@@ -63,7 +63,7 @@ export const TargetGoalComponent: React.FC = () => {
           Yellow
         </Button>
         <Button
-          activeClass='bg-blue-500 hover:bg-blue-600 text-white'
+          activeClass='bg-blue-500 hover:bg-blue-500 text-black dark:bg-blue-500 dark:hover:bg-blue-500 dark:text-black'
           active={localGoal === 'blue'}
           onClick={() => !loading && setGoalColor('blue')}
           className={getButtonClass(loading)}

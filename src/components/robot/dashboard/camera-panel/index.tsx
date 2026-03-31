@@ -17,7 +17,9 @@ export const CameraPanel: React.FC = () => {
       <div className="p-1 flex gap-2 items-center">
         <Button
           onClick={() => setVideoEnabled(!videoEnabled)}
-          activeClass={`${videoEnabled ? 'bg-lime-600' : 'bg-main-900'} hover:${videoEnabled ? 'bg-lime-700' : 'bg-main-800'} text-white`}
+          activeClass={videoEnabled
+            ? 'bg-lime-600 hover:bg-lime-700 text-white dark:bg-lime-400 dark:hover:bg-lime-500 dark:text-black'
+            : 'bg-main-300 hover:bg-main-400 text-main-900 dark:bg-main-900 dark:hover:bg-main-800 dark:text-white'}
           active={true}
           className="px-1 text-sm font-medium flex-1 max-h-4"
         >{`Video: ${videoEnabled ? 'ON' : 'OFF'}`}</Button>
@@ -26,7 +28,7 @@ export const CameraPanel: React.FC = () => {
         {[5, 15, 30, 60].map((f, i) => (
           <Button key={i}
             onClick={() => setFps(f)}
-            activeClass='bg-yellow-500 hover:bg-yellow-600 text-black'
+            activeClass='bg-yellow-500 hover:bg-yellow-600 text-black dark:bg-yellow-400 dark:hover:bg-yellow-500 dark:text-black'
             active={fps === f}
             className="px-1 text-sm font-medium flex-1 max-h-4"
           >{f.toString()}</Button>
@@ -34,7 +36,7 @@ export const CameraPanel: React.FC = () => {
       </div>
 
       {videoEnabled && frameUrl ? (
-        <div className="bg-black shadow-sm aspect-video">
+        <div className="bg-main-950 dark:bg-black shadow-sm aspect-video">
           <img src={frameUrl} alt="Camera Feed" className="w-full h-full object-contain" />
         </div>
       ) : (

@@ -54,7 +54,7 @@ export const SavedRobotsList: React.FC<SavedRobotsListProps> = ({
           className={`p-2 border rounded-lg transition-all ${
             connectedRobotId === robot.id
               ? 'bg-blue-50 dark:bg-blue-900/20 border-blue-300 dark:border-blue-700'
-              : 'bg-white dark:bg-main-800 border-main-200 dark:border-main-700 hover:border-main-300 dark:hover:border-main-600'
+              : 'bg-main-200 dark:bg-main-800 border-main-300 dark:border-main-700 hover:border-main-400 dark:hover:border-main-600'
           }`}
         >
           <div className="flex items-center justify-between gap-4">
@@ -96,7 +96,7 @@ export const SavedRobotsList: React.FC<SavedRobotsListProps> = ({
               <button
                 onClick={() => onDelete(robot.id)}
                 disabled={isConnecting || isLoading}
-                className="px-3 py-1 bg-main-200 dark:bg-main-700 hover:bg-main-300 dark:hover:bg-main-600 text-main-800 dark:text-white font-medium rounded-md transition-colors text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                className="px-3 py-1 bg-main-300 dark:bg-main-700 hover:bg-main-400 dark:hover:bg-main-600 text-main-900 dark:text-white font-medium rounded-md transition-colors text-sm disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Delete
               </button>

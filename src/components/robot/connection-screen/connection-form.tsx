@@ -92,9 +92,9 @@ export const RobotConnectionForm: React.FC<RobotConnectionFormProps> = ({
           onChange={(e) => setName(e.target.value)}
           placeholder="e.g., Main Bot, Lab Bot"
           disabled={isLoading || isSubmitting}
-          className="mt-1 block w-full px-2 border border-main-300 dark:border-main-600 rounded-md shadow-sm 
+          className="mt-1 block w-full px-2 border border-main-400 dark:border-main-600 rounded-md shadow-sm 
                      focus:outline-none focus:ring-blue-500 focus:border-blue-500 
-                     dark:bg-main-700 dark:text-white
+                     bg-main-100 text-main-900 dark:bg-main-700 dark:text-white
                      disabled:opacity-50 disabled:cursor-not-allowed"
         />
       </div>
@@ -111,9 +111,9 @@ export const RobotConnectionForm: React.FC<RobotConnectionFormProps> = ({
             onChange={(e) => setIp(e.target.value)}
             placeholder="192.168.1.100"
             disabled={isLoading || isSubmitting}
-            className="mt-1 block w-full px-2 border border-main-300 dark:border-main-600 rounded-md shadow-sm 
+            className="mt-1 block w-full px-2 border border-main-400 dark:border-main-600 rounded-md shadow-sm 
                        focus:outline-none focus:ring-blue-500 focus:border-blue-500 
-                       dark:bg-main-700 dark:text-white
+                       bg-main-100 text-main-900 dark:bg-main-700 dark:text-white
                        disabled:opacity-50 disabled:cursor-not-allowed"
           />
         </div>
@@ -131,16 +131,16 @@ export const RobotConnectionForm: React.FC<RobotConnectionFormProps> = ({
             min="1"
             max="65535"
             disabled={isLoading || isSubmitting}
-            className="mt-1 block w-full px-2 border border-main-300 dark:border-main-600 rounded-md shadow-sm 
+            className="mt-1 block w-full px-2 border border-main-400 dark:border-main-600 rounded-md shadow-sm 
                        focus:outline-none focus:ring-blue-500 focus:border-blue-500 
-                       dark:bg-main-700 dark:text-white
+                       bg-main-100 text-main-900 dark:bg-main-700 dark:text-white
                        disabled:opacity-50 disabled:cursor-not-allowed"
           />
         </div>
       </div>
 
       {displayError && (
-        <div className="p-1 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-md">
+        <div className="p-1 bg-red-100 dark:bg-red-900/20 border border-red-300 dark:border-red-800 rounded-md">
           <p className="text-sm text-red-700 dark:text-red-400">{displayError}</p>
         </div>
       )}
@@ -160,8 +160,8 @@ export const RobotConnectionForm: React.FC<RobotConnectionFormProps> = ({
             type="button"
             onClick={onCancel}
             disabled={isLoading || isSubmitting}
-            className="px-4 p-1 bg-main-200 dark:bg-main-700 hover:bg-main-300 dark:hover:bg-main-600
-                       text-main-800 dark:text-white font-medium rounded-md
+            className="px-4 p-1 bg-main-300 dark:bg-main-700 hover:bg-main-400 dark:hover:bg-main-600
+                       text-main-900 dark:text-white font-medium rounded-md
                        transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             Cancel

@@ -12,7 +12,7 @@ interface CompassProps {
 }
 
 const Compass: React.FC<CompassProps> = ({ heading }) => (
-  <div className="relative w-16 h-16 rounded-full border-2 border-green-500 mx-auto">
+  <div className="relative w-16 h-16 rounded-full border-2 border-green-700 dark:border-green-500 mx-auto">
     <div
       className="absolute w-0.5 h-6 bg-gradient-to-b from-red-500 to-blue-500 left-1/2 top-1/2 origin-bottom"
       style={{ transform: `translate(-50%, -100%) rotate(${heading}deg)` }}

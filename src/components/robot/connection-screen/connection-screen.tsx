@@ -60,7 +60,7 @@ export const RobotConnectionScreen: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-main-50 dark:bg-main-950 p-6">
+    <div className="min-h-screen bg-main-100 dark:bg-main-950 p-6">
       <div className="max-w-2xl mx-auto">
         {/* Header */}
         <div className="mb-6">
@@ -105,11 +105,11 @@ export const RobotConnectionScreen: React.FC = () => {
         {/* Main Content */}
         <div className="grid grid-cols-1 gap-2">
           {/* Saved Robots Section */}
-          <div className="bg-white dark:bg-main-800 rounded-lg shadow-lg p-3">
+          <div className="bg-main-200 dark:bg-main-800 rounded-lg shadow-lg border border-main-300 dark:border-main-700 p-3">
             <div className="flex items-center justify-between mb-2">
               <h2 className="text-xl font-bold text-main-900 dark:text-white">Saved Robots</h2>
               {savedRobots.length > 0 && (
-                <span className="px-3 py-1 bg-main-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 text-sm rounded-full">
+                <span className="px-3 py-1 bg-main-300 dark:bg-gray-700 text-main-700 dark:text-gray-300 text-sm rounded-full">
                   {savedRobots.length} robot{savedRobots.length !== 1 ? 's' : ''}
                 </span>
               )}
@@ -132,11 +132,11 @@ export const RobotConnectionScreen: React.FC = () => {
           </div>
 
           {/* Add New Robot Section */}
-          <div className="bg-white dark:bg-main-800 rounded-lg shadow-lg p-3">
+          <div className="bg-main-200 dark:bg-main-800 rounded-lg shadow-lg border border-main-300 dark:border-main-700 p-3">
             {!showForm ? (
               <button
                 onClick={() => setShowForm(true)}
-                className="w-full p-1 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-md transition-colors"
+                className="w-full p-1 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-md transition-colors border border-blue-700"
               >
                 + Add New Robot
               </button>

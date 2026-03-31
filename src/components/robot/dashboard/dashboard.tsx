@@ -17,7 +17,7 @@ import { ThemeToggle } from '@/components/ui/theme-toggle';
 // ============= Sub-components =============
 
 const PanelContainer: React.FC<{ className: string; children: React.ReactNode }> = ({ className, children }) => (
-  <div className={cn("w-full bg-main-100 dark:bg-main-950 border-solid border-2 dark:border-main-900 overflow-y-auto", className)}>
+  <div className={cn("w-full bg-main-200 dark:bg-main-950 border-solid border-2 border-main-300 dark:border-main-900 overflow-y-auto", className)}>
     {children}
   </div>
 );
@@ -40,9 +40,9 @@ export const RobotDashboard: React.FC = () => {
 
 
   return (
-    <div className="h-screen bg-white dark:bg-black flex flex-col max-h-screen">
+    <div className="h-screen bg-main-100 dark:bg-black flex flex-col max-h-screen">
       {/* Header */}
-      <div className="flex-none mt-2 px-2 mx-2 border-2 hover:bg-main-300 dark:hover:bg-main-900 border-main-200 dark:border-main-900 dark:hover:border-main-800">
+      <div className="flex-none mt-2 px-2 mx-2 border-2 bg-main-100 border-main-400 hover:bg-main-200 dark:bg-main-950 dark:border-main-900 dark:hover:bg-main-900 dark:hover:border-main-800">
         <div className="flex items-center justify-between gap-6">
           <div className="flex flex-col items-center">
             <h1 className="text-xl font-bold text-main-900 dark:text-white">
@@ -53,7 +53,7 @@ export const RobotDashboard: React.FC = () => {
             </p>
           </div>
           <div className="grid grid-cols-2 gap-2">
-            <Button onClick={disconnectFromRobot} className="border-2 border-red-500 bg-transparent hover:bg-red-800 text-white">Disconnect</Button>
+            <Button onClick={disconnectFromRobot} className="border-2 border-red-600 bg-transparent hover:bg-red-600 text-black dark:bg-transparent dark:border-red-500 dark:text-white dark:hover:bg-red-700">Disconnect</Button>
             <ThemeToggle />
           </div>
         </div>

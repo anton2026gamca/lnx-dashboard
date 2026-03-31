@@ -48,7 +48,7 @@ export const MotorsCard: React.FC<{ fdata: FormattedSensorData }> = ({ fdata }) 
         />
       ))}
       <div className="flex items-center justify-center absolute inset-0 pointer-events-none">
-        <div className="outline-2 dark:outline-main-500 hover:dark:outline-main-400 bg-main-100 dark:bg-main-950 pointer-events-auto p-2">
+        <div className="outline-2 outline-main-500 dark:outline-main-500 hover:outline-main-400 hover:dark:outline-main-400 bg-main-200 dark:bg-main-900 pointer-events-auto p-2">
           <MotorVisualizer speeds={Object.values(fdata.motors).map(Number)} />
         </div>
       </div>

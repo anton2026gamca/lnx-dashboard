@@ -27,7 +27,7 @@ const LineSensors: React.FC<LineSensorsProps> = ({ labels, values, detected }) =
         const value = rawValue / 1000;
         const angle = (i / numSensors) * 360 - 90;
         const rad = (angle * Math.PI) / 180;
-        const divSize = (sensorSize - highlightOutline / 2);
+        const divSize = (sensorSize + highlightOutline / 2);
         const x = center + radius * Math.cos(rad) - divSize / 2;
         const y = center + radius * Math.sin(rad) - divSize / 2;
         const color = `rgb(${51 + 51 * value}, ${102 + 153 * value}, ${102 + 153 * value})`;
@@ -41,7 +41,7 @@ const LineSensors: React.FC<LineSensorsProps> = ({ labels, values, detected }) =
               width: `${divSize}px`,
               height: `${divSize}px`,
               background: color,
-              outline: detected[i] ? `${highlightOutline}px solid gold` : `${highlightOutline / 2}px solid ${color}`,
+              border: detected[i] ? `${highlightOutline}px solid gold` : `${highlightOutline / 2}px solid ${color}`,
             }}
           >
             {labels[i] || ""}

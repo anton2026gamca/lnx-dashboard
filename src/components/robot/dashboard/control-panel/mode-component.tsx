@@ -45,11 +45,10 @@ export const ModeComponent: React.FC = () => {
   const getButtonClass = (isLoading: boolean) => isLoading ? 'opacity-50 cursor-not-allowed' : '';
 
   return (
-    <div className="bg-main-900 p-2">
-      <h3 className="text-xs font-bold text-white uppercase mb-2">Mode</h3>
+    <div className="bg-main-200 dark:bg-main-900 border border-main-300 dark:border-main-800 p-2">
+      <h3 className="text-xs font-bold text-main-900 dark:text-white uppercase mb-2">Mode</h3>
       <div className="grid grid-cols-3 gap-1">
         <Button
-          activeClass='bg-main-200 hover:bg-main-200 text-black'
           active={localMode === 'idle'}
           onClick={() => !loading && handleModeChange('idle')}
           className={getButtonClass(loading)}
@@ -57,7 +56,6 @@ export const ModeComponent: React.FC = () => {
           Idle
         </Button>
         <Button
-          activeClass='bg-main-200 hover:bg-main-200 text-black'
           active={localMode === 'autonomous'}
           onClick={() => !loading && handleModeChange('autonomous')}
           className={getButtonClass(loading)}
@@ -65,7 +63,6 @@ export const ModeComponent: React.FC = () => {
           Autonomous
         </Button>
         <Button
-          activeClass='bg-main-200 hover:bg-main-200 text-black'
           active={localMode === 'manual'}
           onClick={() => !loading && handleModeChange('manual')}
           className={getButtonClass(loading)}

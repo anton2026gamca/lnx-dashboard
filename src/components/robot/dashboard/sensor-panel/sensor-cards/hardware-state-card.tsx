@@ -27,7 +27,7 @@ const RunningStateVisualizer: React.FC<RunningStateVisualizerProps> = ({
 
   return (
     <div className="space-y-1 text-xs font-mono">
-      <div className={`flex items-center p-1 ${running ? 'bg-green-900 text-green-200' : 'bg-main-800 text-main-500'}`}>
+      <div className={`flex items-center p-1 ${running ? 'bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200' : 'bg-main-300 dark:bg-main-800 text-main-700 dark:text-main-500'}`}>
         <span>{running ? 'ENABLED' : 'DISABLED'}</span>
       </div>
       

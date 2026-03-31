@@ -39,8 +39,8 @@ export const SettingsToggle: React.FC<SettingsToggleProps> = ({
   disabled = false,
 }) => {
   return (
-    <div className={cn('flex items-center justify-between border-2 dark:border-main-700 px-2', className)}>
-      <label className="text-xs text-white">{label}</label>
+    <div className={cn('flex items-center justify-between border-2 border-main-400 dark:border-main-700 px-2', className)}>
+      <label className="text-xs text-main-800 dark:text-white">{label}</label>
       <Button
         onClick={() => !disabled && onChange(!value)}
         activeClass="bg-green-600 hover:bg-green-700 text-white"

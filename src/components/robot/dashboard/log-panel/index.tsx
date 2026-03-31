@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 const parseLogMessage = (message: string): { text: string; color: string } => {
   const cleanText = message.replace(/\x1b\[[0-9;]*m/g, '').replace(/^.*?: /, '');
   
-  let color = 'text-white';
+  let color = 'text-main-800 dark:text-white';
   
   if (message.includes('\x1b[1;31m') || message.includes('\x1b[91m')) {
     color = 'text-red-500';
@@ -23,7 +23,7 @@ const parseLogMessage = (message: string): { text: string; color: string } => {
   } else if (message.includes('\x1b[1;36m') || message.includes('\x1b[96m')) {
     color = 'text-cyan-500';
   } else if (message.includes('\x1b[1;37m') || message.includes('\x1b[97m')) {
-    color = 'text-white';
+    color = 'text-main-200 dark:text-white';
   } else if (message.includes('\x1b[30m') || message.includes('\x1b[90m')) {
     color = 'text-gray-500';
   }
@@ -48,11 +48,11 @@ export const LogPanel: React.FC = () => {
   };
 
   const levelButtonMap: Record<string, string> = {
-    debug: 'bg-blue-500 hover:bg-blue-600 text-white',
-    info: 'bg-lime-600 hover:bg-lime-700 text-white',
-    warning: 'bg-yellow-500 hover:bg-yellow-600 text-black',
-    error: 'bg-red-500 hover:bg-red-800 text-white',
-    critical: 'bg-red-500 hover:bg-red-800 text-white',
+    debug: 'bg-blue-500 hover:bg-blue-600 text-white dark:bg-blue-500 dark:hover:bg-blue-600 dark:text-black',
+    info: 'bg-lime-600 hover:bg-lime-700 text-white dark:bg-lime-500 dark:hover:bg-lime-600 dark:text-black',
+    warning: 'bg-yellow-500 hover:bg-yellow-600 text-black dark:bg-yellow-500 dark:hover:bg-yellow-600 dark:text-black',
+    error: 'bg-red-500 hover:bg-red-800 text-white dark:bg-red-500 dark:hover:bg-red-800 dark:text-black',
+    critical: 'bg-red-500 hover:bg-red-800 text-white dark:bg-red-500 dark:hover:bg-red-800 dark:text-black',
   };
   
   const filteredLogs = logs.filter(log => {
@@ -100,15 +100,15 @@ export const LogPanel: React.FC = () => {
   }, [filteredLogs, autoScroll]);
 
   return (
-    <div className="flex flex-col h-full bg-main-950">
-      <div className="text-xs font-bold text-white uppercase px-3 py-1 border-b border-main-800 flex-shrink-0 flex items-center justify-between gap-5">
+    <div className="flex flex-col h-full bg-main-200 dark:bg-main-950">
+      <div className="text-xs font-bold text-main-900 dark:text-white uppercase px-3 py-1 border-b border-main-400 dark:border-main-800 flex-shrink-0 flex items-center justify-between gap-5">
         <span>Logs ({filteredLogs.length} / {logs.length})</span>
         <input
           type="text"
           placeholder="Search logs..."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          className="flex-1 px-1 text-xs bg-main-800 text-white border border-main-700 focus:outline-none focus:border-blue-500"
+          className="flex-1 px-1 text-xs bg-main-100 dark:bg-main-800 text-main-900 dark:text-white border border-main-400 dark:border-main-700 focus:outline-none focus:border-blue-500"
         />
         <div className="flex gap-1">
           {Object.entries(levelButtonMap).map(([level, activeClass], i) => (
@@ -138,11 +138,11 @@ export const LogPanel: React.FC = () => {
             const { text, color } = parseLogMessage(log.message || '');
             const timestamp = log.time ? `${new Date(log.time * 1000).toLocaleTimeString('en-GB', { hour12: false })}` : '';
             const level = (log.level.toLowerCase() || 'info') as string;
-            const levelColor = levelColorMap[level] || 'text-white';
+            const levelColor = levelColorMap[level] || 'text-main-800 dark:text-white';
             const logger = `[${log.logger}]` || '';
             
             return (
-              <div key={idx} className="flex gap-2 text-white">
+              <div key={idx} className="flex gap-2 text-main-900 dark:text-white">
                 <span className="flex-shrink-0">{timestamp}</span>
                 <span className="flex-shrink-0 flex gap-1">[<span className={`${levelColor} font-bold`}>{level.toUpperCase()}</span>]</span>
                 <span className="flex-shrink-0">{logger}:</span>

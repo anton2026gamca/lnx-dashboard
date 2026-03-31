@@ -121,7 +121,7 @@ const FieldVisualizer: React.FC<FieldVisualizerProps> = ({
 
       <div className="flex flex-col gap-2 items-center w-full h-full" ref={containerRef}>
         <div 
-          className="relative bg-green-600 border-2 border-white dark:border-main-600 rounded overflow-hidden flex-1 flex items-center justify-center"
+          className="relative bg-green-600 border-2 border-main-100 dark:border-main-600 rounded overflow-hidden flex-1 flex items-center justify-center"
           style={{
             height: `${displayHeight}px`,
             minHeight: '300px',

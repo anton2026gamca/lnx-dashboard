@@ -23,28 +23,28 @@ export const GoalDetectionCard: React.FC<{ fdata: FormattedSensorData, targetGoa
         <div className={`px-2 font-bold ${
           fdata?.goal.detected 
             ? 'bg-green-600 text-white' 
-            : 'bg-main-700 text-main-400'
+            : 'bg-main-700 text-white dark:text-main-400'
         }`}>
           {fdata?.goal.detected ? 'YES' : 'NO'}
         </div>
       </div>
-      <div className="flex justify-between pt-1 border-t border-main-700">
+      <div className="flex justify-between pt-1 border-t border-main-400 dark:border-main-700">
         <span>Alignment:</span>
-        <span className="font-mono text-green-500">{fdata.goal.alignment}</span>
+        <span className="font-mono text-green-800 dark:text-green-500">{fdata.goal.alignment}</span>
       </div>
       <div className="flex justify-between">
         <span>Center X:</span>
-        <span className="font-mono text-green-500">{fdata.goal.center_x}</span>
+        <span className="font-mono text-green-800 dark:text-green-500">{fdata.goal.center_x}</span>
       </div>
       <div className="flex justify-between">
         <span>Area:</span>
-        <span className="font-mono text-green-500">{fdata.goal.area}</span>
+        <span className="font-mono text-green-800 dark:text-green-500">{fdata.goal.area}</span>
       </div>
       <div className="flex justify-between">
         <span>Height:</span>
-        <span className="font-mono text-green-500">{fdata.goal.height}</span>
+        <span className="font-mono text-green-800 dark:text-green-500">{fdata.goal.height}</span>
       </div>
-      <div className="flex justify-between pt-1 border-t border-main-700">
+      <div className="flex justify-between pt-1 border-t border-main-400 dark:border-main-700">
         <span>Distance:</span>
         <span className="font-mono text-blue-500">{fdata.goal.distance}</span>
       </div>
