@@ -63,7 +63,7 @@ export const ManualMovementComponent: React.FC = () => {
 
   if (mode !== 'manual') {
     return (
-      <div className="bg-main-950 border-2 border-main-800 p-2 rounded flex-1 flex items-center justify-center text-center">
+      <div className="bg-main-950 border-2 border-main-800 p-2 flex-1 flex items-center justify-center text-center">
         <div className="text-xs text-main-500">
           Switch to <span className="font-bold text-yellow-400">Manual Mode</span> to use keyboard controls
         </div>
@@ -72,7 +72,7 @@ export const ManualMovementComponent: React.FC = () => {
   }
 
   return (
-    <div className="bg-main-950 border-2 border-green-700 p-2 rounded flex flex-col items-center justify-center">
+    <div className="bg-main-950 border-2 border-green-700 p-2 flex flex-col items-center justify-center">
       <div className="text-xs font-bold text-green-200 uppercase mb-2">Manual Control Active</div>
       <div className="text-xs text-green-300 space-y-1 font-mono">
         <div>W/S - Forward/Backward</div>

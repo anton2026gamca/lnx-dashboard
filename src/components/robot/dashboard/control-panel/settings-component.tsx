@@ -15,7 +15,7 @@ export const SettingsComponent: React.FC = () => {
   const [activeTab, setActiveTab] = useState<SettingsTab>('motor');
 
   return (
-    <div className="bg-main-900 p-2 rounded">
+    <div className="bg-main-900 p-2">
       <h3 className="text-xs font-bold text-white uppercase mb-2">Settings</h3>
       
       {/* Tab Buttons */}

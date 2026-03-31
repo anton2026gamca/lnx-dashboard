@@ -51,7 +51,7 @@ export const TargetGoalComponent: React.FC = () => {
   const getButtonClass = (isLoading: boolean) => isLoading ? 'opacity-50 cursor-not-allowed' : '';
 
   return (
-    <div className="bg-main-900 p-2 rounded">
+    <div className="bg-main-900 p-2">
       <h3 className="text-xs font-bold text-white uppercase mb-2">Target Goal</h3>
       <div className="grid grid-cols-2 gap-1">
         <Button

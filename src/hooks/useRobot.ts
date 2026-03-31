@@ -7,7 +7,7 @@
 import { useEffect, useCallback, useState } from 'react';
 import { robotClient } from '@/lib/robotAPIClient';
 import { useRobot } from '@/context/RobotContext';
-import { SensorData, RobotMode, LogEntry, DetectedObject, LogsBatch } from '@/types/robot';
+import { SensorData, RobotMode, LogEntry, LogsBatch } from '@/types/robot';
 
 /**
  * Hook to fetch sensor data periodically
@@ -144,7 +144,7 @@ export const useTargetGoal = () => {
 /**
  * Hook for video streaming
  */
-export const useVideoStream = (fps: number = 30, showDetections: boolean = true) => {
+export const useVideoStream = (enabled: boolean, fps: number = 30, showDetections: boolean = true) => {
   const { connectionState } = useRobot();
   const [frame, setFrame] = useState<Uint8Array | null>(null);
   const [isStreaming, setIsStreaming] = useState(false);
@@ -156,6 +156,11 @@ export const useVideoStream = (fps: number = 30, showDetections: boolean = true)
     }
 
     try {
+      if (!enabled) {
+        setIsStreaming(false);
+        return;
+      }
+
       const unsubscribe = robotClient.subscribeVideo(
         (frameData) => setFrame(frameData),
         fps,
@@ -172,7 +177,7 @@ export const useVideoStream = (fps: number = 30, showDetections: boolean = true)
       console.error('Failed to subscribe to video:', err);
       setIsStreaming(false);
     }
-  }, [connectionState.isConnected, fps, showDetections]);
+  }, [connectionState.isConnected, enabled, fps, showDetections]);
 
   return { frame, isStreaming };
 };

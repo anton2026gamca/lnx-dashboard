@@ -1,13 +1,9 @@
 'use client';
 
-import { LogEntry } from "@/types/robot";
 import { useEffect, useRef, useState } from "react";
+import { useLogs } from "@/hooks/useRobot";
 import { Button } from "@/components/ui/button";
 
-
-interface LogPanelProps {
-  logs: LogEntry[];
-}
 
 const parseLogMessage = (message: string): { text: string; color: string } => {
   const cleanText = message.replace(/\x1b\[[0-9;]*m/g, '').replace(/^.*?: /, '');
@@ -35,7 +31,9 @@ const parseLogMessage = (message: string): { text: string; color: string } => {
   return { text: cleanText, color };
 };
 
-export const LogPanel: React.FC<LogPanelProps> = ({ logs }) => {
+export const LogPanel: React.FC = () => {
+  const logs = useLogs();
+
   const scrollRef = useRef<HTMLDivElement>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedLevels, setSelectedLevels] = useState<Set<string>>(new Set(['debug', 'info', 'warning', 'error', 'critical']));

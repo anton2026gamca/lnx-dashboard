@@ -70,21 +70,18 @@ export const AutonomousSettingsMenu: React.FC = () => {
 
       {error && <p className="text-xs text-red-500 mb-2">{error}</p>}
 
-      <div className="flex flex-col gap-1">
-        <label className="text-xs text-main-200">State Machine</label>
-        <select
-          value={settings.state_machine || ''}
-          onChange={(e) => updateSetting('state_machine', e.target.value || null)}
-          className="text-xs bg-main-800 text-white border border-main-700 rounded px-2 py-1"
-        >
-          <option value="" className='hidden'></option>
-          {stateMachines.map((sm) => (
-            <option key={sm} value={sm}>
-              {sm}
-            </option>
-          ))}
-        </select>
-      </div>
+      <select
+        value={settings.state_machine || ''}
+        onChange={(e) => updateSetting('state_machine', e.target.value || null)}
+        className="text-xs bg-main-800 text-white border border-main-700 rounded px-1"
+      >
+        <option value="" className='hidden'></option>
+        {stateMachines.map((sm) => (
+          <option key={sm} value={sm}>
+            {sm}
+          </option>
+        ))}
+      </select>
 
       <div className="flex items-center justify-between">
         <label className="text-xs text-main-200">Face Goal/North</label>
