@@ -71,13 +71,6 @@ export const formatSensorData = (data: SensorData | null): FormattedSensorData =
           height: data.goal_detection.height_pixels !== null ? `${data.goal_detection.height_pixels.toFixed(0)}px` : 'N/A',
         }
       : { detected: false, alignment: 'N/A', center_x: 'N/A', area: '0px²', distance: 'N/A', height: 'N/A' },
-    position: data?.position_estimate
-      ? {
-          x: data.position_estimate.x_mm !== null ? `${data.position_estimate.x_mm.toFixed(0)}mm` : '---',
-          y: data.position_estimate.y_mm !== null ? `${data.position_estimate.y_mm.toFixed(0)}mm` : '---',
-          confidence: `${(data.position_estimate.confidence * 100).toFixed(1)}%`,
-        }
-      : { x: '---', y: '---', confidence: '---' },
     running_state: data?.running_state
       ? {
           running: data.running_state.running,

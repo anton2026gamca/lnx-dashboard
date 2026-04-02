@@ -9,6 +9,7 @@ export interface RobotConnection {
   port: number;
   createdAt: number;
   lastConnected?: number;
+  token?: string;
 }
 
 export interface RobotConnectionState {
@@ -63,11 +64,6 @@ export interface SensorData {
     distance_mm: number | null;
     height_pixels: number | null;
   };
-  position_estimate?: {
-    x_mm: number | null;
-    y_mm: number | null;
-    confidence: number;
-  };
   timestamp?: number;
 }
 
@@ -101,17 +97,18 @@ export interface FormattedSensorData {
     distance: string;
     height: string;
   };
-  position: {
-    x: string;
-    y: string;
-    confidence: string;
-  };
   running_state: {
     running: boolean;
     bt_module_enabled: boolean;
     bt_module_state: boolean;
     switch_state: boolean;
   };
+}
+
+export interface PositionEstimate {
+  x_mm: number | null;
+  y_mm: number | null;
+  confidence: number;
 }
 
 export interface MotorSettings {

@@ -6,6 +6,7 @@
 
 import React from 'react';
 import { RobotConnection } from '@/types/robot';
+import { Button } from '@/components/ui/button';
 
 interface SavedRobotsListProps {
   robots: RobotConnection[];
@@ -13,6 +14,7 @@ interface SavedRobotsListProps {
   isConnecting?: boolean;
   onConnect: (robot: RobotConnection) => void;
   onDelete: (id: string) => void;
+  onEdit: (robot: RobotConnection) => void;
   isLoading?: boolean;
 }
 
@@ -36,6 +38,7 @@ export const SavedRobotsList: React.FC<SavedRobotsListProps> = ({
   isConnecting = false,
   onConnect,
   onDelete,
+  onEdit,
   isLoading = false,
 }) => {
   if (robots.length === 0) {
@@ -51,7 +54,7 @@ export const SavedRobotsList: React.FC<SavedRobotsListProps> = ({
       {robots.map((robot) => (
         <div
           key={robot.id}
-          className={`p-2 border rounded-lg transition-all ${
+          className={`p-2 border transition-all ${
             connectedRobotId === robot.id
               ? 'bg-blue-50 dark:bg-blue-900/20 border-blue-300 dark:border-blue-700'
               : 'bg-main-200 dark:bg-main-800 border-main-300 dark:border-main-700 hover:border-main-400 dark:hover:border-main-600'
@@ -62,8 +65,8 @@ export const SavedRobotsList: React.FC<SavedRobotsListProps> = ({
               <div className="flex items-center gap-2">
                 <h3 className="font-semibold text-main-900 dark:text-white truncate">{robot.name}</h3>
                 {connectedRobotId === robot.id && (
-                  <span className="inline-flex items-center gap-1 px-1 bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 text-xs font-medium rounded">
-                    <span className="w-2 h-2 bg-blue-600 dark:bg-blue-400 rounded-full animate-pulse"></span>
+                  <span className="inline-flex items-center gap-1 px-1 bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 text-xs font-semibold rounded">
+                    <span className="w-2 h-2 bg-blue-600 dark:bg-blue-400 animate-pulse"></span>
                     Connected
                   </span>
                 )}
@@ -81,25 +84,37 @@ export const SavedRobotsList: React.FC<SavedRobotsListProps> = ({
             </div>
 
             <div className="flex gap-2 shrink-0">
-              <button
+              <Button
                 onClick={() => onConnect(robot)}
                 disabled={isConnecting || isLoading}
-                className={`px-3 py-1 rounded-md font-medium transition-colors text-sm ${
+                className={`px-1 font-semibold text-sm ${
                   connectedRobotId === robot.id
-                    ? 'bg-red-600 hover:bg-red-700 text-white'
-                    : 'bg-blue-600 hover:bg-blue-700 text-white'
+                    ? 'bg-red-600 hover:bg-red-700 text-white dark:bg-red-500 dark:hover:bg-red-700 dark:text-white'
+                    : 'bg-blue-600 hover:bg-blue-700 text-white dark:bg-blue-500 dark:hover:bg-blue-700 dark:text-white'
                 } disabled:opacity-50 disabled:cursor-not-allowed`}
+                title={connectedRobotId === robot.id ? 'Disconnect from robot' : 'Connect to robot'}
               >
                 {connectedRobotId === robot.id ? 'Disconnect' : 'Connect'}
-              </button>
+              </Button>
 
-              <button
-                onClick={() => onDelete(robot.id)}
+              <Button
+                onClick={() => onEdit(robot)}
                 disabled={isConnecting || isLoading}
-                className="px-3 py-1 bg-main-300 dark:bg-main-700 hover:bg-main-400 dark:hover:bg-main-600 text-main-900 dark:text-white font-medium rounded-md transition-colors text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                className="px-1 font-semibold text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                title="Edit robot"
+              >
+                Edit
+              </Button>
+
+              <Button
+                onClick={() => onDelete(robot.id)}
+                active={false}
+                disabled={isConnecting || isLoading}
+                className="px-1 border-red-500 dark:border-red-500 hover:bg-red-300 dark:hover:bg-red-800 font-semibold text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                title="Delete robot"
               >
                 Delete
-              </button>
+              </Button>
             </div>
           </div>
         </div>

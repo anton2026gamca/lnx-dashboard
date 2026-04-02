@@ -7,8 +7,10 @@
 import React, { useState } from 'react';
 import { useRobot } from '@/context/RobotContext';
 import { RobotConnectionForm } from './connection-form';
+import { RobotEditForm } from './robot-edit-form';
 import { SavedRobotsList } from './saved-robots-list';
 import { RobotConnection } from '@/types/robot';
+import { Button } from '@/components/ui/button';
 
 export const RobotConnectionScreen: React.FC = () => {
   const {
@@ -22,24 +24,24 @@ export const RobotConnectionScreen: React.FC = () => {
 
   const [showForm, setShowForm] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
+  const [editingRobot, setEditingRobot] = useState<RobotConnection | null>(null);
 
   const handleConnect = async (robot: RobotConnection) => {
     setFormError(null);
 
     try {
-      // If already connected, disconnect first
       if (connectionState.isConnected && connectionState.connectedRobot?.id === robot.id) {
         disconnectFromRobot();
         return;
       }
 
-      // If connected to a different robot, disconnect first
       if (connectionState.isConnected && connectionState.connectedRobot?.id !== robot.id) {
         disconnectFromRobot();
       }
       
-      await connectToRobot(robot);
       saveRobot(robot);
+      
+      await connectToRobot(robot);
       setShowForm(false);
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Connection failed';
@@ -59,19 +61,34 @@ export const RobotConnectionScreen: React.FC = () => {
     deleteSavedRobot(id);
   };
 
+  const handleEditRobot = (robot: RobotConnection) => {
+    setEditingRobot(robot);
+  };
+
+  const handleSaveEditedRobot = async (updatedRobot: RobotConnection) => {
+    setFormError(null);
+    try {
+      saveRobot(updatedRobot);
+      setEditingRobot(null);
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to update robot';
+      setFormError(errorMessage);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-main-100 dark:bg-main-950 p-6">
       <div className="max-w-2xl mx-auto">
         {/* Header */}
         <div className="mb-6">
-          <h1 className="text-3xl md:text-4xl font-bold text-main-900 dark:text-white mb-2">
+          <h1 className="text-3xl flex items-center justify-center md:text-4xl font-bold text-main-900 dark:text-white mb-2">
             LNX Robot Dashboard
           </h1>
         </div>
 
         {/* Current Connection Status */}
         {connectionState.isConnected && connectionState.connectedRobot && (
-          <div className="mb-3 p-2 bg-green-50 dark:bg-green-900/20 border border-green-300 dark:border-green-700 rounded-lg">
+          <div className="mb-3 p-2 bg-green-50 dark:bg-green-900/20 border border-green-300 dark:border-green-700">
             <div className="flex items-center justify-between">
               <div>
                 <h3 className="font-semibold text-green-900 dark:text-green-300">
@@ -81,35 +98,36 @@ export const RobotConnectionScreen: React.FC = () => {
                   {connectionState.connectedRobot.ip}:{connectionState.connectedRobot.port}
                 </p>
               </div>
-              <button
+              <Button
                 onClick={() => {
                   disconnectFromRobot();
                   setShowForm(false);
                 }}
-                className="px-2 py-1 bg-green-600 hover:bg-green-700 text-white font-medium rounded-md transition-colors"
+                className="px-2 py-1 font-semibold"
+                title="Disconnect from robot"
               >
                 Disconnect
-              </button>
+              </Button>
             </div>
           </div>
         )}
 
         {/* Connection Error */}
         {connectionState.error && !connectionState.isConnecting && (
-          <div className="mb-3 p-2 bg-red-50 dark:bg-red-900/20 border border-red-300 dark:border-red-700 rounded-lg">
+          <div className="mb-3 p-2 bg-red-50 dark:bg-red-900/20 border border-red-300 dark:border-red-700 overflow-auto">
             <h3 className="font-semibold text-red-900 dark:text-red-300 mb-1">Connection Error</h3>
-            <p className="text-sm text-red-700 dark:text-red-400">{connectionState.error}</p>
+            <p className="text-sm text-red-700 dark:text-red-400 whitespace-pre">{connectionState.error}</p>
           </div>
         )}
 
         {/* Main Content */}
         <div className="grid grid-cols-1 gap-2">
           {/* Saved Robots Section */}
-          <div className="bg-main-200 dark:bg-main-800 rounded-lg shadow-lg border border-main-300 dark:border-main-700 p-3">
+          <div className="bg-main-200 dark:bg-main-800 shadow-lg border border-main-300 dark:border-main-700 p-2">
             <div className="flex items-center justify-between mb-2">
               <h2 className="text-xl font-bold text-main-900 dark:text-white">Saved Robots</h2>
               {savedRobots.length > 0 && (
-                <span className="px-3 py-1 bg-main-300 dark:bg-gray-700 text-main-700 dark:text-gray-300 text-sm rounded-full">
+                <span className="px-3 py-0.5 bg-main-300 dark:bg-gray-700 text-main-700 dark:text-gray-300 text-sm rounded-full">
                   {savedRobots.length} robot{savedRobots.length !== 1 ? 's' : ''}
                 </span>
               )}
@@ -122,6 +140,7 @@ export const RobotConnectionScreen: React.FC = () => {
                 isConnecting={connectionState.isConnecting}
                 onConnect={handleQuickConnect}
                 onDelete={handleDeleteRobot}
+                onEdit={handleEditRobot}
                 isLoading={connectionState.isConnecting}
               />
             ) : (
@@ -132,14 +151,15 @@ export const RobotConnectionScreen: React.FC = () => {
           </div>
 
           {/* Add New Robot Section */}
-          <div className="bg-main-200 dark:bg-main-800 rounded-lg shadow-lg border border-main-300 dark:border-main-700 p-3">
+          <div className="bg-main-200 dark:bg-main-800 shadow-lg border border-main-300 dark:border-main-700 p-2">
             {!showForm ? (
-              <button
+              <Button
                 onClick={() => setShowForm(true)}
-                className="w-full p-1 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-md transition-colors border border-blue-700"
+                className="w-full font-semibold text-sm"
+                title="Add new robot"
               >
                 + Add New Robot
-              </button>
+              </Button>
             ) : (
               <div>
                 <h2 className="text-xl font-bold text-main-900 dark:text-white mb-4">Add New Robot</h2>
@@ -157,6 +177,25 @@ export const RobotConnectionScreen: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* Edit Robot Modal */}
+      {editingRobot && (
+        <div className="fixed inset-0 bg-black/85 flex items-center justify-center p-4 z-50">
+          <div className="bg-main-100 dark:bg-main-800 shadow-xl max-w-2xl w-full max-h-[90vh] overflow-auto border border-main-300 dark:border-main-700 p-4">
+            <h2 className="text-2xl font-bold text-main-900 dark:text-white mb-4">Edit Robot</h2>
+            <RobotEditForm
+              robot={editingRobot}
+              onSave={handleSaveEditedRobot}
+              isLoading={connectionState.isConnecting}
+              error={formError}
+              onCancel={() => {
+                setEditingRobot(null);
+                setFormError(null);
+              }}
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 };

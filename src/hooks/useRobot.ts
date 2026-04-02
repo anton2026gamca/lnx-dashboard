@@ -7,7 +7,7 @@
 import { useEffect, useCallback, useState } from 'react';
 import { robotClient } from '@/lib/robotAPIClient';
 import { useRobot } from '@/context/RobotContext';
-import { SensorData, RobotMode, LogEntry, LogsBatch } from '@/types/robot';
+import { SensorData, RobotMode, LogEntry, LogsBatch, PositionEstimate } from '@/types/robot';
 
 /**
  * Hook to fetch sensor data periodically
@@ -51,6 +51,35 @@ export const useSensorData = (interval: number = 500) => {
   }, [connectionState.isConnected, interval]);
 
   return { sensorData, loading, error };
+};
+
+export const usePositionEstimate = (interval: number = 500) => {
+  const { connectionState } = useRobot();
+  const [position, setPosition] = useState<PositionEstimate | null>(null);
+
+  const fetchPosition = async () => {
+    try {
+      const data = await robotClient.getPositionEstimate();
+      setPosition(data);
+    } catch (err) {
+      console.error('Failed to fetch position estimate:', err);
+      setPosition(null);
+    }
+  }
+
+  useEffect(() => {
+    if (!connectionState.isConnected) {
+      setPosition(null);
+      return;
+    }
+    
+    fetchPosition();
+    
+    const timer = setInterval(fetchPosition, interval);
+    return () => clearInterval(timer);
+  }, [connectionState.isConnected, interval]);
+  
+  return position;
 };
 
 /**
@@ -236,27 +265,25 @@ export const useManualControl = () => {
 export const useLogs = () => {
   const { connectionState } = useRobot();
   const [logs, setLogs] = useState<LogEntry[]>([]);
+    
+  const fetchLogs = async () => {
+    try {
+      const logBatch = await robotClient.getLogs();
+      if (logBatch) {
+        return logBatch?.logs || [];
+      }
+    }
+    catch (err) {
+      console.error('Failed to fetch logs:', err);
+      return [];
+    }
+  }
 
   useEffect(() => {
     if (!connectionState.isConnected) {
       setLogs([]);
       return;
     }
-    
-    const fetchLogs = async () => {
-      try {
-        const logBatch = await robotClient.getLogs();
-        if (logBatch) {
-          setLogs(logBatch?.logs || []);
-        }
-      }
-      catch (err) {
-        console.error('Failed to fetch logs:', err);
-        setLogs([]);
-      }
-    }
-
-    fetchLogs();
     
     const unsubscribe = robotClient.subscribeNewLogs((data: LogsBatch) => {
       setLogs(prev => [...prev, ...(data.logs || [])]);
@@ -269,6 +296,6 @@ export const useLogs = () => {
   }
   , [connectionState.isConnected]);
 
-  return logs;
+  return { logs, fetchLogs };
 }
 

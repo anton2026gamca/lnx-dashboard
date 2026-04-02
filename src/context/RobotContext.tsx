@@ -20,7 +20,7 @@ interface RobotContextType {
   saveRobot: (robot: RobotConnection) => void;
   deleteSavedRobot: (id: string) => void;
   loadSavedRobots: () => void;
-  createNewRobotConnection: (name: string, ip: string, port: number) => RobotConnection;
+  createNewRobotConnection: (name: string, ip: string, port: number, token?: string) => RobotConnection;
 }
 
 const RobotContext = createContext<RobotContextType | undefined>(undefined);
@@ -66,7 +66,7 @@ export const RobotProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
       loadSavedRobots();
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Connection failed';
+      const errorMessage = error instanceof Error ? `${error.name}: ${error.message}\n${error.stack || ''}` : `Connection failed: ${JSON.stringify(error)}`;
       setConnectionState(prev => ({
         ...prev,
         isConnecting: false,
@@ -99,13 +99,14 @@ export const RobotProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   }, [loadSavedRobots]);
 
   const createNewRobotConnection = useCallback(
-    (name: string, ip: string, port: number): RobotConnection => {
+    (name: string, ip: string, port: number, token?: string): RobotConnection => {
       return {
         id: robotStorage.generateId(),
         name,
         ip,
         port,
         createdAt: Date.now(),
+        ...(token && { token }),
       };
     },
     [],

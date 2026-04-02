@@ -1,33 +1,33 @@
 /**
- * Robot connection form component
+ * Robot edit form component
  */
 
 'use client';
 
 import React, { useState } from 'react';
-import { useRobot } from '@/context/RobotContext';
 import { RobotConnection } from '@/types/robot';
 import { validateIP, validatePort } from '@/lib/robotUtils'
 import { Button } from '@/components/ui/button';
 
-interface RobotConnectionFormProps {
-  onConnect: (robot: RobotConnection) => Promise<void>;
+interface RobotEditFormProps {
+  robot: RobotConnection;
+  onSave: (robot: RobotConnection) => Promise<void>;
   isLoading?: boolean;
   error?: string | null;
-  onCancel?: () => void;
+  onCancel: () => void;
 }
 
-export const RobotConnectionForm: React.FC<RobotConnectionFormProps> = ({
-  onConnect,
+export const RobotEditForm: React.FC<RobotEditFormProps> = ({
+  robot,
+  onSave,
   isLoading = false,
   error,
   onCancel,
 }) => {
-  const robotCtx = useRobot();
-  const [name, setName] = useState('');
-  const [ip, setIp] = useState('192.168.1.100');
-  const [port, setPort] = useState('8000');
-  const [token, setToken] = useState('');
+  const [name, setName] = useState(robot.name);
+  const [ip, setIp] = useState(robot.ip);
+  const [port, setPort] = useState(robot.port.toString());
+  const [token, setToken] = useState(robot.token || '');
   const [formError, setFormError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -58,7 +58,7 @@ export const RobotConnectionForm: React.FC<RobotConnectionFormProps> = ({
     return true;
   };
 
-  const handleSubmit = async (e: React.SubmitEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (!validateForm()) {
@@ -67,19 +67,16 @@ export const RobotConnectionForm: React.FC<RobotConnectionFormProps> = ({
 
     setIsSubmitting(true);
     try {
-      const robot: RobotConnection = robotCtx.createNewRobotConnection(
-        name.trim(),
-        ip.trim(),
-        parseInt(port, 10),
-        token.trim() || undefined,
-      );
-      await onConnect(robot);
-      setName('');
-      setIp('192.168.1.100');
-      setPort('8000');
-      setToken('');
+      const updatedRobot: RobotConnection = {
+        ...robot,
+        name: name.trim(),
+        ip: ip.trim(),
+        port: parseInt(port, 10),
+        token: token.trim() || undefined,
+      };
+      await onSave(updatedRobot);
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Connection failed';
+      const errorMessage = err instanceof Error ? err.message : 'Failed to update robot';
       setFormError(errorMessage);
     } finally {
       setIsSubmitting(false);
@@ -177,26 +174,24 @@ export const RobotConnectionForm: React.FC<RobotConnectionFormProps> = ({
       <div className={`flex gap-2 ${displayError ? '' : 'pt-1'}`}>
         <Button
           onClick={() => {}}
-          className="flex-1 font-semibold text-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          className="flex-1 font-semibold text-sm disabled:opacity-50 disabled:cursor-not-allowed"
           disabled={isLoading || isSubmitting}
-          title="Connect"
+          title="Save changes"
         >
           <span>
-            {isLoading || isSubmitting ? 'Connecting...' : 'Connect'}
+            {isLoading || isSubmitting ? 'Saving...' : 'Save Changes'}
           </span>
         </Button>
 
-        {onCancel && (
-          <Button
-            onClick={onCancel}
-            className="px-4 font-semibold text-sm disabled:opacity-50 disabled:cursor-not-allowed"
-            active={false}
-            disabled={isLoading || isSubmitting}
-            title="Cancel"
-          >
-            Cancel
-          </Button>
-        )}
+        <Button
+          onClick={onCancel}
+          className="font-semibold text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+          active={false}
+          disabled={isLoading || isSubmitting}
+          title="Cancel"
+        >
+          Cancel
+        </Button>
       </div>
     </form>
   );

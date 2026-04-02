@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { SensorCard, SensorProperty } from "./sensor-card";
-import { FormattedSensorData, SensorData } from "@/types/robot";
+import { FormattedSensorData, PositionEstimate, SensorData } from "@/types/robot";
 
 
 interface FieldVisualizerProps {
@@ -252,11 +252,11 @@ const FieldVisualizer: React.FC<FieldVisualizerProps> = ({
 };
 
 
-export const FieldCard: React.FC<{ data: SensorData | null, fdata: FormattedSensorData, targetGoal: 'yellow' | 'blue' | null , className?: string}> = ({ data, fdata, targetGoal, className }) => (
+export const FieldCard: React.FC<{ data: SensorData | null, fdata: FormattedSensorData, targetGoal: 'yellow' | 'blue' | null, position: PositionEstimate | null, className?: string}> = ({ data, fdata, targetGoal, position, className }) => (
   <SensorCard label="Position" className={className}>
     <FieldVisualizer 
-      robotX={data?.position_estimate?.x_mm || null}
-      robotY={data?.position_estimate?.y_mm || null}
+      robotX={position?.x_mm || null}
+      robotY={position?.y_mm || null}
       robotHeading={data?.compass?.heading || null}
       confidence={fdata.position.confidence}
       targetGoal={targetGoal}

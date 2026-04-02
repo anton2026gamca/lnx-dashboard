@@ -1,6 +1,6 @@
 'use client';
 
-import { useSensorData, useTargetGoal } from "@/hooks/useRobot";
+import { useSensorData, usePositionEstimate, useTargetGoal } from "@/hooks/useRobot";
 import { formatSensorData } from "@/lib/robotUtils";
 import { CompassCard } from "./sensor-cards/compass-card";
 import { LineSensorsCard } from "./sensor-cards/line-sensors-card";
@@ -15,6 +15,7 @@ export const SensorPanel: React.FC = () => {
   const { sensorData } = useSensorData();
   const formattedData = formatSensorData(sensorData);
   const { targetGoal } = useTargetGoal();
+  const position = usePositionEstimate();
 
   return (
     <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 p-2">
@@ -23,7 +24,7 @@ export const SensorPanel: React.FC = () => {
       <GoalDetectionCard fdata={formattedData} targetGoal={targetGoal} />
       <BallDetectionCard data={sensorData} fdata={formattedData} />
       <MotorsCard fdata={formattedData} />
-      <FieldCard className='col-span-2 row-span-2' data={sensorData} fdata={formattedData} targetGoal={targetGoal} />
+      <FieldCard className='col-span-2 row-span-2' data={sensorData} fdata={formattedData} targetGoal={targetGoal} position={position} />
       <HardwareStateCard fdata={formattedData} />
     </div>
   );

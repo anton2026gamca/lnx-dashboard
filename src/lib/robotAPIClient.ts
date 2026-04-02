@@ -2,8 +2,8 @@
  * Robot API client using Socket.IO
  */
 
-import io, { Socket } from 'socket.io-client';
-import { RobotConnection, RobotMode, SensorData, MotorSettings, GoalSettings, AutonomousSettings, LogsBatch, DetectedObject } from '@/types/robot';
+import { io, Socket } from 'socket.io-client';
+import { RobotConnection, RobotMode, SensorData, MotorSettings, GoalSettings, AutonomousSettings, LogsBatch, DetectedObject, PositionEstimate } from '@/types/robot';
 
 export class RobotAPIClient {
   private socket: Socket | null = null;
@@ -18,14 +18,22 @@ export class RobotAPIClient {
     return new Promise((resolve, reject) => {
       try {
         const url = `http://${robot.ip}:${robot.port}`;
-        
-        this.socket = io(url, {
+        const opts = {
           reconnection: true,
           reconnectionDelay: this.reconnectDelay,
           reconnectionDelayMax: 10000,
           reconnectionAttempts: this.maxReconnectAttempts,
           transports: ['websocket', 'polling'],
-        });
+          query: {},
+        }
+
+        if (robot.token) {
+          opts.query = { token: btoa(robot.token) };
+        }
+
+        console.log(`Connecting to robot at ${url} with options:`, opts);
+        
+        this.socket = io(url, opts);
 
         this.robot = robot;
 
@@ -82,6 +90,13 @@ export class RobotAPIClient {
    */
   async getSensorData(): Promise<SensorData | null> {
     return this._emit('get_sensor_data', {});
+  }
+
+  /**
+    * Get position estimate
+    */
+  async getPositionEstimate(): Promise<PositionEstimate | null> {
+    return this._emit('get_position_estimate', {});
   }
 
   /**

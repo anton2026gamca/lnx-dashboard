@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useLogs } from "@/hooks/useRobot";
 import { Button } from "@/components/ui/button";
+import { LogEntry } from "@/types/robot";
 
 
 const parseLogMessage = (message: string): { text: string; color: string } => {
@@ -32,7 +33,7 @@ const parseLogMessage = (message: string): { text: string; color: string } => {
 };
 
 export const LogPanel: React.FC = () => {
-  const logs = useLogs();
+  const { logs, fetchLogs } = useLogs();
 
   const scrollRef = useRef<HTMLDivElement>(null);
   const [searchQuery, setSearchQuery] = useState('');
@@ -54,15 +55,18 @@ export const LogPanel: React.FC = () => {
     error: 'bg-red-500 hover:bg-red-800 text-white dark:bg-red-500 dark:hover:bg-red-800 dark:text-black',
     critical: 'bg-red-500 hover:bg-red-800 text-white dark:bg-red-500 dark:hover:bg-red-800 dark:text-black',
   };
-  
-  const filteredLogs = logs.filter(log => {
-    const level = (log.level.toLowerCase() || 'info') as string;
-    const matchesLevel = selectedLevels.has(level);
-    const matchesSearch = searchQuery === '' || 
-      log.message.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      log.logger.toLowerCase().includes(searchQuery.toLowerCase());
-    return matchesLevel && matchesSearch;
-  });
+
+  const filterLogs = (logs: LogEntry[]) => {
+    return logs.filter(log => {
+      const level = (log.level.toLowerCase() || 'info') as string;
+      const matchesLevel = selectedLevels.has(level);
+      const matchesSearch = searchQuery === '' || 
+        log.message.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        log.logger.toLowerCase().includes(searchQuery.toLowerCase());
+      return matchesLevel && matchesSearch;
+    });
+  };
+  const filteredLogs = filterLogs(logs);
   
   const toggleLevel = (level: string) => {
     const newSet = new Set(selectedLevels);
@@ -74,13 +78,14 @@ export const LogPanel: React.FC = () => {
     setSelectedLevels(newSet);
   };
   
-  const exportLogs = () => {
-    const csvContent = filteredLogs.map(log => {
+  const exportLogs = async () => {
+    const allLogs = await fetchLogs() || [];
+    const csvContent = allLogs.map(log => {
       const timestamp = log.time ? new Date(log.time * 1000).toISOString() : '';
-      const message = log.message.replace(/\x1b\[[0-9;]*m/g, '').replace(/"/g, '""');
-      return `"${timestamp}","${log.level}","${log.logger}","${message}"`;
+      const message = log.message;
+      const cleanMsg = message.replace(/\x1b\[[0-9;]*m/g, '').replace(/^.*?: /, '').replace(/"/g, '""');
+      return `"${timestamp}","${log.level}","${log.logger}","${cleanMsg}"`;
     }).join('\n');
-    
     const header = '"Timestamp","Level","Logger","Message"\n';
     const blob = new Blob([header + csvContent], { type: 'text/csv' });
     const url = URL.createObjectURL(blob);

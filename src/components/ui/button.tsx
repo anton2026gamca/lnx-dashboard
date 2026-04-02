@@ -9,9 +9,10 @@ interface ButtonProps {
   onClick: () => void;
   active?: boolean;
   activeClass?: string;
+  disabled?: boolean;
 }
 
-export const Button: React.FC<ButtonProps> = ({ title = '', active = true, onClick, activeClass = '', className = '', children }) => {
+export const Button: React.FC<ButtonProps> = ({ title = '', active = true, onClick, activeClass = '', className = '', disabled = false, children }) => {
   return (
     <button
       onClick={onClick}
@@ -24,6 +25,7 @@ export const Button: React.FC<ButtonProps> = ({ title = '', active = true, onCli
         active ? activeClass : ''
       )}
       title={title}
+      disabled={disabled}
     >
       {children}
     </button>
