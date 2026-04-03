@@ -39,11 +39,11 @@ export const formatSensorData = (data: SensorData | null): FormattedSensorData =
           roll: `${normalizeAngle(data.compass.roll).toFixed(1)}°`,
         }
       : { heading: '---', pitch: '---', roll: '---' },
-    ir_ball: data?.ir
+    ir_ball: data?.ir && data.ir.angle !== null && data.ir.distance !== null && data.ir.angle !== 999 && data.ir.distance !== 0
       ? {
           angle: `${normalizeAngle(data.ir.angle).toFixed(1)}°`,
           distance: `${data.ir.distance.toFixed(0)}mm`,
-          detected: data.ir.angle !== null && data.ir.distance !== null && data.ir.angle !== 999 && data.ir.distance !== 0,
+          detected: true,
         }
       : { angle: '---', distance: '---', detected: false },
     camera_ball: data?.camera_ball

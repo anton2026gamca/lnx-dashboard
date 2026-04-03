@@ -210,7 +210,7 @@ const FieldVisualizer: React.FC<FieldVisualizerProps> = ({
           {/* Ball position (Camera) */}
           {ballSource === 'camera' && ballPixelX !== null && ballPixelY !== null && (
             <div
-              className="absolute w-2.5 h-2.5 bg-green-400 rounded-full border border-green-600 transform -translate-x-1/2 -translate-y-1/2 z-10"
+              className="absolute w-2.5 h-2.5 bg-orange-400 rounded-full border border-orange-600 transform -translate-x-1/2 -translate-y-1/2 z-10"
               style={{ left: `${ballPixelX}px`, top: `${ballPixelY}px` }}
               title={`Ball (Camera): Distance ${camBallDistance?.toFixed(0)}mm, Angle ${camBallAngle?.toFixed(1)}°`}
             ></div>
@@ -236,9 +236,6 @@ const FieldVisualizer: React.FC<FieldVisualizerProps> = ({
                   ></div>
                 )}
               </div>
-              <div className="text-xs text-white font-mono mt-1 whitespace-nowrap">
-                {robotX?.toFixed(0)}, {robotY?.toFixed(0)}
-              </div>
             </div>
           ) : (
             <div className="absolute inset-0 flex items-center justify-center text-xs text-white font-mono bg-black/70 font-semibold">
@@ -258,7 +255,7 @@ export const FieldCard: React.FC<{ data: SensorData | null, fdata: FormattedSens
       robotX={position?.x_mm || null}
       robotY={position?.y_mm || null}
       robotHeading={data?.compass?.heading || null}
-      confidence={fdata.position.confidence}
+      confidence={`${position?.confidence.toFixed(1) || 0}%`}
       targetGoal={targetGoal}
       irBallAngle={fdata?.ir_ball.angle ? parseFloat(fdata.ir_ball.angle.toString()) : null}
       irBallDistance={fdata?.ir_ball.distance ? parseFloat(fdata.ir_ball.distance.toString()) : null}

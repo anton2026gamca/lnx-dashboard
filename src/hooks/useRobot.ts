@@ -12,7 +12,7 @@ import { SensorData, RobotMode, LogEntry, LogsBatch, PositionEstimate } from '@/
 /**
  * Hook to fetch sensor data periodically
  */
-export const useSensorData = (interval: number = 500) => {
+export const useSensorData = (interval: number = 200) => {
   const { connectionState } = useRobot();
   const [sensorData, setSensorData] = useState<SensorData | null>(null);
   const [loading, setLoading] = useState(false);
@@ -53,17 +53,22 @@ export const useSensorData = (interval: number = 500) => {
   return { sensorData, loading, error };
 };
 
-export const usePositionEstimate = (interval: number = 500) => {
+export const usePositionEstimate = (interval: number = 100) => {
   const { connectionState } = useRobot();
   const [position, setPosition] = useState<PositionEstimate | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const fetchPosition = async () => {
     try {
+      setLoading(true);
       const data = await robotClient.getPositionEstimate();
       setPosition(data);
     } catch (err) {
-      console.error('Failed to fetch position estimate:', err);
+      setError(err instanceof Error ? err.message : 'Failed to fetch position estimate');
       setPosition(null);
+    } finally {
+      setLoading(false);
     }
   }
 
@@ -79,7 +84,7 @@ export const usePositionEstimate = (interval: number = 500) => {
     return () => clearInterval(timer);
   }, [connectionState.isConnected, interval]);
   
-  return position;
+  return { position, loading, error };
 };
 
 /**
@@ -296,6 +301,6 @@ export const useLogs = () => {
   }
   , [connectionState.isConnected]);
 
-  return { logs, fetchLogs };
+  return { logs, setLogs, fetchLogs };
 }
 

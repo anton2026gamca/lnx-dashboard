@@ -9,6 +9,7 @@ import { ModeComponent } from './mode-component';
 import { TargetGoalComponent } from './target-goal-component';
 import { SettingsComponent } from './settings-component';
 import { ManualMovementComponent } from './manual-movement-component';
+import { Button } from '@/components/ui/button';
 
 export const ControlPanel: React.FC = () => {
   return (
@@ -16,6 +17,10 @@ export const ControlPanel: React.FC = () => {
       <ModeComponent />
       <TargetGoalComponent />
       <SettingsComponent />
+      <div className="bg-main-200 dark:bg-main-900 border border-main-300 dark:border-main-800 p-2">
+        <h3 className="text-xs font-bold text-main-900 dark:text-white uppercase mb-2">Calibration</h3>
+        <Button className="w-full" onClick={() => {}}>Open Calibration Menu</Button>
+      </div>
       <ManualMovementComponent />
     </div>
   );

@@ -24,6 +24,7 @@ export const SettingsComponent: React.FC = () => {
           onClick={() => setActiveTab('motor')}
           active={activeTab === 'motor'}
           className="flex-1"
+          activeClass="hover:bg-main-900 dark:hover:bg-main-200"
         >
           Motor
         </Button>

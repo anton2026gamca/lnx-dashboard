@@ -33,11 +33,11 @@ const parseLogMessage = (message: string): { text: string; color: string } => {
 };
 
 export const LogPanel: React.FC = () => {
-  const { logs, fetchLogs } = useLogs();
+  const { logs, setLogs, fetchLogs } = useLogs();
 
   const scrollRef = useRef<HTMLDivElement>(null);
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedLevels, setSelectedLevels] = useState<Set<string>>(new Set(['debug', 'info', 'warning', 'error', 'critical']));
+  const [selectedLevels, setSelectedLevels] = useState<Set<string>>(new Set(['info', 'warning', 'error', 'critical']));
   const [autoScroll, setAutoScroll] = useState(true);
   
   const levelColorMap: Record<string, string> = {
@@ -126,7 +126,9 @@ export const LogPanel: React.FC = () => {
         </div>
         <div className="flex gap-1 text-xs">
           <Button onClick={() => setAutoScroll(!autoScroll)} active={autoScroll}>Auto-scroll</Button>
-          <Button onClick={() => exportLogs()}>Export</Button>
+          <Button onClick={() => exportLogs()}>Export All</Button>
+          <Button onClick={async () => setLogs(await fetchLogs() || [])}>Load All</Button>
+          <Button onClick={() => setLogs([])}>Clear</Button>
         </div>
       </div>
       
