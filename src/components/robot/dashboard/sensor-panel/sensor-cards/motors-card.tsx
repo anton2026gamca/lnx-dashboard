@@ -44,7 +44,7 @@ export const MotorsCard: React.FC<{ fdata: FormattedSensorData }> = ({ fdata }) 
         <SensorProperty
           key={i}
           label={`M${i}`}
-          value={fdata.motors[i]?.toString()}
+          value={fdata.motors[i]}
         />
       ))}
       <div className="flex items-center justify-center absolute inset-0 pointer-events-none">

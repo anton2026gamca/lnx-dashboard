@@ -2,7 +2,7 @@
  * Robot utilities and helpers
  */
 
-import { FormattedSensorData, SensorData } from '@/types/robot';
+import { FormattedSensorData, GoalDetectionData, PositionEstimate, SensorData } from '@/types/robot';
 
 /**
  * Validate IP address format
@@ -30,7 +30,7 @@ export const validatePort = (port: number): boolean => {
 /**
  * Format sensor data for display
  */
-export const formatSensorData = (data: SensorData | null): FormattedSensorData => {
+export const formatSensorData = (data: SensorData | null, goalDetection: GoalDetectionData | null): FormattedSensorData => {
   return {
     compass: data?.compass
       ? {
@@ -60,17 +60,17 @@ export const formatSensorData = (data: SensorData | null): FormattedSensorData =
           thresholds: data.line.thresholds.map((t, _) => `${t[0]}-${t[1]}`),
         }
       : { detected: new Array(12).fill('No'), raw: new Array(12).fill(''), thresholds: new Array(12).fill('__-__') },
-    motors: data?.motors ? data.motors.map((m, _) => `${(m / 255 * 100).toFixed(0)}%`) : ['--', '--', '--', '--'],
-    goal: data?.goal_detection
+    motors: data?.motors ? data.motors.map((m, _) => `${(m).toFixed(0)}%`) : ['--', '--', '--', '--'],
+    goal: goalDetection && goalDetection.goal_detected
       ? {
-          detected: data.goal_detection.detected,
-          alignment: `${(data.goal_detection.alignment * 100).toFixed(1)}%`,
-          center_x: data.goal_detection.center_x !== null ? `${data.goal_detection.center_x.toFixed(0)}px` : 'N/A',
-          area: `${data.goal_detection.area.toFixed(0)}px²`,
-          distance: data.goal_detection.distance_mm !== null ? `${data.goal_detection.distance_mm.toFixed(0)}mm` : 'N/A',
-          height: data.goal_detection.height_pixels !== null ? `${data.goal_detection.height_pixels.toFixed(0)}px` : 'N/A',
+          detected: true,
+          alignment: `${(goalDetection.alignment * 100).toFixed(1)}%`,
+          center_x: goalDetection.goal_center_x !== null ? `${goalDetection.goal_center_x.toFixed(0)}px` : '---',
+          area: `${goalDetection.goal_area.toFixed(0)}px²`,
+          distance: goalDetection.distance_mm !== null ? `${goalDetection.distance_mm.toFixed(0)}mm` : '---',
+          height: goalDetection.goal_height_pixels !== null ? `${goalDetection.goal_height_pixels.toFixed(0)}px` : '---',
         }
-      : { detected: false, alignment: 'N/A', center_x: 'N/A', area: '0px²', distance: 'N/A', height: 'N/A' },
+      : { detected: false, alignment: '---', center_x: '---', area: '0px²', distance: '---', height: '---' },
     running_state: data?.running_state
       ? {
           running: data.running_state.running,

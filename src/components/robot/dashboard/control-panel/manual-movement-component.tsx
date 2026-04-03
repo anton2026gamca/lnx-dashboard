@@ -8,7 +8,7 @@ import React, { useEffect, useState } from 'react';
 import { useRobotMode } from '@/hooks/useRobot';
 import { robotClient } from '@/lib/robotAPIClient';
 
-export const ManualMovementComponent: React.FC = () => {
+export const ManualMovementComponent: React.FC<{compact?: boolean}> = ({compact = false}) => {
   const { mode } = useRobotMode();
   const [keyPressed, setKeyPressed] = useState<Set<string>>(new Set());
 
@@ -73,12 +73,12 @@ export const ManualMovementComponent: React.FC = () => {
 
   return (
     <div className="bg-main-100 dark:bg-main-950 border-2 border-green-500 dark:border-green-700 p-2 flex flex-col items-center justify-center h-full">
-      <div className="text-xs font-bold text-green-800 dark:text-green-200 uppercase mb-2">Manual Control Active</div>
-      <div className="text-xs text-green-700 dark:text-green-300 space-y-1 font-mono">
+      <div className="text-xs font-bold text-green-800 dark:text-green-200 uppercase">Manual Control Active</div>
+      {!compact && <div className="text-xs text-green-700 dark:text-green-300 space-y-1 font-mono mt-2">
         <div>W/S - Forward/Backward</div>
         <div>A/D - Strafe Left/Right</div>
         <div>← / → - Rotate</div>
-      </div>
+      </div>}
     </div>
   );
 };

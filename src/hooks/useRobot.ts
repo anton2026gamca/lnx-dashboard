@@ -7,7 +7,7 @@
 import { useEffect, useCallback, useState } from 'react';
 import { robotClient } from '@/lib/robotAPIClient';
 import { useRobot } from '@/context/RobotContext';
-import { SensorData, RobotMode, LogEntry, LogsBatch, PositionEstimate } from '@/types/robot';
+import { SensorData, RobotMode, LogEntry, LogsBatch, PositionEstimate, MotorSettings, AutonomousSettings, GoalDetectionData } from '@/types/robot';
 
 /**
  * Hook to fetch sensor data periodically
@@ -21,9 +21,9 @@ export const useSensorData = (interval: number = 200) => {
   const fetchData = async () => {
     try {
       setLoading(true);
-      setError(null);
       const data = await robotClient.getSensorData();
       setSensorData(data);
+      setError(null);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to fetch sensor data');
     } finally {
@@ -40,17 +40,48 @@ export const useSensorData = (interval: number = 200) => {
     }
 
     fetchData();
-  
-    const unsubscribe = robotClient.subscribeImportantSensorDataChange((data: SensorData) => setSensorData(data));
 
     const timer = setInterval(fetchData, interval);
-    return () => {
-      clearInterval(timer);
-      unsubscribe();
-    };
+    return () => clearInterval(timer);
   }, [connectionState.isConnected, interval]);
 
   return { sensorData, loading, error };
+};
+
+export const useGoalDetection = (interval: number = 200) => {
+  const { connectionState } = useRobot();
+  const [goalDetection, setGoalDetection] = useState<GoalDetectionData | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const fetchData = async () => {
+    try {
+      setLoading(true);
+      const data = await robotClient.getGoalDetection();
+      setGoalDetection(data);
+      setError(null);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to fetch goal detection data');
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    if (!connectionState.isConnected) {
+      if (goalDetection !== null) {
+        setGoalDetection(null);
+      }
+      return;
+    }
+    
+    fetchData();
+
+    const timer = setInterval(fetchData, interval);
+    return () => clearInterval(timer);
+  }, [connectionState.isConnected, interval]);
+  
+  return { goalDetection, loading, error, fetchData };
 };
 
 export const usePositionEstimate = (interval: number = 100) => {
@@ -103,7 +134,7 @@ export const useRobotMode = () => {
         return;
       }
       setMode(currentMode);
-      console.log('Fetched mode:', currentMode);
+      // console.log('Fetched mode:', currentMode);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to fetch mode');
     }
@@ -304,3 +335,92 @@ export const useLogs = () => {
   return { logs, setLogs, fetchLogs };
 }
 
+/**
+  * Hook to manage motor settings
+  */
+export const useMotorSettings = () => {
+  const [settings, setSettings] = useState<MotorSettings>({});
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    fetchSettings();
+  }, []);
+
+  const fetchSettings = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const data = await robotClient.getMotorSettings();
+      if (data) {
+        setSettings(data);
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to fetch settings');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const updateSetting = async (key: keyof MotorSettings, value: boolean) => {
+    try {
+      setSettings(prev => ({ ...prev, [key]: value }));
+      await robotClient.setMotorSettings({[key]: value});
+    } catch (err) {
+      await fetchSettings();
+      setError(err instanceof Error ? 'Failed to update setting: ' + err.message : 'Failed to update setting');
+    }
+  };
+
+  return { settings, loading, error, updateSetting, fetchSettings };
+};
+
+/**
+  * Hook to manage autonomous settings
+  */
+export const useAutonomousSettings = () => {
+  const [settings, setSettings] = useState<AutonomousSettings>({});
+  const [stateMachines, setStateMachines] = useState<string[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    fetchSettings();
+  }, []);
+
+  const fetchSettings = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      
+      const [autonomousData, stateMachinesData] = await Promise.all([
+        robotClient.getAutonomousSettings(),
+        robotClient.getAllStateMachines(),
+      ]);
+
+      if (autonomousData) {
+        setSettings(autonomousData);
+      }
+      
+      if (stateMachinesData) {
+        setStateMachines(stateMachinesData);
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to fetch settings');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const updateSetting = async (key: keyof AutonomousSettings, value: any) => {
+    try {
+      setSettings(prev => ({ ...prev, [key]: value }));
+      await robotClient.setAutonomousSettings({[key]: value});
+    } catch (err) {
+      await fetchSettings();
+      setError(err instanceof Error ? err.message : 'Failed to update setting');
+    }
+  };
+
+  return { settings, stateMachines, loading, error, updateSetting };
+};

@@ -6,13 +6,14 @@
 
 import React, { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { useRobotMode } from '@/hooks/useRobot';
+import { useMotorSettings, useRobotMode } from '@/hooks/useRobot';
 import { robotClient } from '@/lib/robotAPIClient';
 import { RobotMode } from '@/types/robot';
 
 export const ModeComponent: React.FC = () => {
   const { mode, changeMode, loading } = useRobotMode();
   const [localMode, setLocalMode] = useState<RobotMode>(mode);
+  const { updateSetting } = useMotorSettings();
 
   useEffect(() => {
     const handleModeUpdate = (data: any) => {
@@ -34,6 +35,9 @@ export const ModeComponent: React.FC = () => {
 
   const handleModeChange = async (newMode: RobotMode) => {
     setLocalMode(newMode);
+    if (newMode === 'autonomous') {
+      updateSetting('line_avoiding_enabled', true);
+    }
     try {
       await changeMode(newMode);
     } catch (err) {

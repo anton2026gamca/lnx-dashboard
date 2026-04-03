@@ -4,55 +4,12 @@
 
 'use client';
 
-import React, { useEffect, useState } from 'react';
-import { robotClient } from '@/lib/robotAPIClient';
-import { AutonomousSettings } from '@/types/robot';
+import React from 'react';
 import { SettingsToggle } from '@/components/ui/settings-toggle';
-import { Button } from '@/components/ui/button';
+import { useAutonomousSettings } from '@/hooks/useRobot';
 
 export const AutonomousSettingsMenu: React.FC = () => {
-  const [settings, setSettings] = useState<AutonomousSettings>({});
-  const [stateMachines, setStateMachines] = useState<string[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    fetchSettings();
-  }, []);
-
-  const fetchSettings = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      
-      const [autonomousData, stateMachinesData] = await Promise.all([
-        robotClient.getAutonomousSettings(),
-        robotClient.getAllStateMachines(),
-      ]);
-
-      if (autonomousData) {
-        setSettings(autonomousData);
-      }
-      
-      if (stateMachinesData) {
-        setStateMachines(stateMachinesData);
-      }
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to fetch settings');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const updateSetting = async (key: keyof AutonomousSettings, value: any) => {
-    try {
-      setSettings(prev => ({ ...prev, [key]: value }));
-      await robotClient.setAutonomousSettings({[key]: value});
-    } catch (err) {
-      await fetchSettings();
-      setError(err instanceof Error ? err.message : 'Failed to update setting');
-    }
-  };
+  const { settings, updateSetting, error, loading, stateMachines } = useAutonomousSettings();
 
   return (
     <div className="relative p-2 grid gap-x-2 gap-y-1 grid-cols-1 lg:grid-cols-3">

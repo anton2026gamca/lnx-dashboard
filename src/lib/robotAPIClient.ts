@@ -3,7 +3,7 @@
  */
 
 import { io, Socket } from 'socket.io-client';
-import { RobotConnection, RobotMode, SensorData, MotorSettings, GoalSettings, AutonomousSettings, LogsBatch, DetectedObject, PositionEstimate } from '@/types/robot';
+import { RobotConnection, RobotMode, SensorData, MotorSettings, GoalSettings, AutonomousSettings, LogsBatch, DetectedObject, PositionEstimate, GoalDetectionData } from '@/types/robot';
 
 export class RobotAPIClient {
   private socket: Socket | null = null;
@@ -90,6 +90,13 @@ export class RobotAPIClient {
    */
   async getSensorData(): Promise<SensorData | null> {
     return this._emit('get_sensor_data', {});
+  }
+
+  /**
+    * Get goal detection data
+    */
+  async getGoalDetection(): Promise<GoalDetectionData | null> {
+    return this._emit('get_goal_detection', {});
   }
 
   /**
@@ -237,12 +244,20 @@ export class RobotAPIClient {
   }
 
   /**
-   * Get line calibration status
+   * Get line calibration status with all detailed information
    */
   async getLineCalibrationStatus(): Promise<{
-    phase: number;
-    min_values: number[];
-    max_values: number[];
+    active?: boolean;
+    phase?: number;
+    current_thresholds?: number[][];
+    calibration_min?: number[];
+    calibration_max?: number[];
+    phase1_complete?: boolean;
+    phase1_min?: number[];
+    phase1_max?: number[];
+    phase2_complete?: boolean;
+    phase2_min?: number[];
+    phase2_max?: number[];
   } | null> {
     return this._emit('get_line_calibration_status', {});
   }
@@ -329,11 +344,34 @@ export class RobotAPIClient {
   async computeHsvFromRegions(
     regions: Array<{x: number; y: number; width: number; height: number}>
   ): Promise<{
-    h_min: number; h_max: number;
-    s_min: number; s_max: number;
-    v_min: number; v_max: number;
+    lower: [number, number, number];
+    upper: [number, number, number];
   } | null> {
     return this._emit('compute_hsv_from_regions', { regions });
+  }
+
+  /**
+   * Set line sensor thresholds
+   */
+  async setLineThresholds(thresholds: number[][]): Promise<void> {
+    await this._emit('set_line_thresholds', { thresholds });
+  }
+
+  /**
+   * Set ball color calibration
+   */
+  async setBallCalibration(lower: [number, number, number], upper: [number, number, number]): Promise<void> {
+    await this._emit('set_ball_calibration', { lower, upper });
+  }
+
+  /**
+   * Get ball color calibration
+   */
+  async getBallColorCalibration(): Promise<{
+    lower: [number, number, number];
+    upper: [number, number, number];
+  } | null> {
+    return this._emit('get_ball_color_calibration', {});
   }
 
   // ============ Update Subscriptions ============
@@ -351,7 +389,7 @@ export class RobotAPIClient {
     }
 
     const handler = (data: any) => {
-      console.log(`Received update for ${eventName}:`, data);
+      // console.log(`Received update for ${eventName}:`, data);
       callback(data as T);
     };
 

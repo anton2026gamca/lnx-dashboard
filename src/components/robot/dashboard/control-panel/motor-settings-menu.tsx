@@ -4,44 +4,12 @@
 
 'use client';
 
-import React, { useEffect, useState } from 'react';
-import { robotClient } from '@/lib/robotAPIClient';
-import { MotorSettings } from '@/types/robot';
+import React from 'react';
 import { SettingsToggle } from '@/components/ui/settings-toggle';
+import { useMotorSettings } from '@/hooks/useRobot';
 
 export const MotorSettingsMenu: React.FC = () => {
-  const [settings, setSettings] = useState<MotorSettings>({});
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    fetchSettings();
-  }, []);
-
-  const fetchSettings = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      const data = await robotClient.getMotorSettings();
-      if (data) {
-        setSettings(data);
-      }
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to fetch settings');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const updateSetting = async (key: keyof MotorSettings, value: boolean) => {
-    try {
-      setSettings(prev => ({ ...prev, [key]: value }));
-      await robotClient.setMotorSettings({[key]: value});
-    } catch (err) {
-      await fetchSettings();
-      setError(err instanceof Error ? 'Failed to update setting: ' + err.message : 'Failed to update setting');
-    }
-  };
+  const { settings, updateSetting, error, loading } = useMotorSettings();
 
   return (
     <div className="relative p-2 grid gap-x-2 gap-y-1 grid-cols-1 lg:grid-cols-3">

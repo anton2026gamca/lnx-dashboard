@@ -56,16 +56,17 @@ export interface SensorData {
     bt_module_state: boolean;
     switch_state: boolean;
   };
-  goal_detection?: {
-    detected: boolean;
-    alignment: number;
-    center_x: number | null;
-    area: number;
-    distance_mm: number | null;
-    height_pixels: number | null;
-  };
   timestamp?: number;
 }
+
+export interface GoalDetectionData {
+  goal_detected: boolean;
+  alignment: number;
+  goal_center_x: number | null;
+  goal_area: number;
+  distance_mm: number | null;
+  goal_height_pixels: number | null;
+};
 
 export interface FormattedSensorData {
   compass: {
