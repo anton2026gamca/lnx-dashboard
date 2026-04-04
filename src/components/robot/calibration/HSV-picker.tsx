@@ -6,7 +6,7 @@
 'use client';
 
 import React, { useState, useRef, useEffect } from 'react';
-import { HSVRange } from '@/types/calibration';
+import { HSVRange, Region } from '@/types/calibration';
 import { GradientSlider } from './GradientSlider';
 
 interface HSVPickerProps {
@@ -14,6 +14,7 @@ interface HSVPickerProps {
   onChange: (value: Partial<HSVRange>) => void;
   label?: string;
   enableGradientSliders?: boolean;
+  otherRegions?: HSVRange[];
 }
 
 interface DrawingState {
@@ -44,7 +45,7 @@ const hsvToRgb = (h: number, s: number, v: number): [number, number, number] => 
   ];
 };
 
-export const HSVPicker: React.FC<HSVPickerProps> = ({ value, onChange, label = '', enableGradientSliders = true }) => {
+export const HSVPicker: React.FC<HSVPickerProps> = ({ value, onChange, label = '', enableGradientSliders = true, otherRegions = [] }) => {
   const canvasRefs = {
     hs: useRef<HTMLCanvasElement>(null),
     hv: useRef<HTMLCanvasElement>(null),
@@ -173,145 +174,139 @@ export const HSVPicker: React.FC<HSVPickerProps> = ({ value, onChange, label = '
   useEffect(() => {
     const preview = getPreviewInBounds();
 
-    // Draw Hue-Saturation map
-    const hsCanvas = canvasRefs.hs.current;
-    if (hsCanvas) {
-      const ctx = hsCanvas.getContext('2d');
-      if (ctx) {
-        const width = hsCanvas.width;
-        const height = hsCanvas.height;
-
-        const imageData = ctx.createImageData(width, height);
-        const data = imageData.data;
-
-        for (let x = 0; x < width; x++) {
-          for (let y = 0; y < height; y++) {
-            const h = (x / width) * 180;
-            const s = ((height - y) / height) * 255;
-            const v = preview.v;
-
-            const [r, g, b] = hsvToRgb(h, s, v);
-            const idx = (y * width + x) * 4;
-
-            data[idx] = r;
-            data[idx + 1] = g;
-            data[idx + 2] = b;
-            data[idx + 3] = 255;
-          }
+    const drawMap = (
+      canvas: HTMLCanvasElement | null,
+      getHSV: (x: number, y: number, width: number, height: number) => [number, number, number],
+      rect: { x1: number, x2: number, y1: number, y2: number },
+      previewPos: { x: number, y: number },
+      getRect: (region: HSVRange, canvas: HTMLCanvasElement) => { x1: number; x2: number; y1: number; y2: number },
+    ) => {
+      if (!canvas) return;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return;
+      const width = canvas.width;
+      const height = canvas.height;
+      const imageData = ctx.createImageData(width, height);
+      const data = imageData.data;
+      for (let x = 0; x < width; x++) {
+        for (let y = 0; y < height; y++) {
+          const [h, s, v] = getHSV(x, y, width, height);
+          const [r, g, b] = hsvToRgb(h, s, v);
+          const idx = (y * width + x) * 4;
+          data[idx] = r;
+          data[idx + 1] = g;
+          data[idx + 2] = b;
+          data[idx + 3] = 255;
         }
-
-        ctx.putImageData(imageData, 0, 0);
-
-        ctx.strokeStyle = '#00ff00';
-        ctx.lineWidth = 2;
-        const x1 = (minH / 179) * width;
-        const x2 = (maxH / 179) * width;
-        const y1 = height - ((maxS / 255) * height);
-        const y2 = height - ((minS / 255) * height);
-        ctx.strokeRect(x1, y1, x2 - x1, y2 - y1);
-
-        const previewX = (preview.h / 180) * width;
-        const previewY = height - ((preview.s / 255) * height);
-        ctx.fillStyle = '#ff0000';
-        ctx.beginPath();
-        ctx.arc(previewX, previewY, 3, 0, Math.PI * 2);
-        ctx.fill();
       }
-    }
+      ctx.putImageData(imageData, 0, 0);
+
+      const drawRegionRect = (
+        ctx: CanvasRenderingContext2D,
+        rect: { x1: number; x2: number; y1: number; y2: number },
+        color = '#ffffff'
+      ) => {
+        ctx.save();
+        ctx.strokeStyle = color;
+        ctx.lineWidth = 1.5;
+        ctx.setLineDash([4, 2]);
+        ctx.strokeRect(rect.x1, rect.y1, rect.x2 - rect.x1, rect.y2 - rect.y1);
+        ctx.restore();
+      };
+
+      otherRegions.forEach((region) => {
+        drawRegionRect(ctx, getRect(region, canvas));
+      });
+
+      console.log(otherRegions);
+
+      ctx.strokeStyle = '#00ff00';
+      ctx.lineWidth = 2;
+      ctx.strokeRect(rect.x1, rect.y1, rect.x2 - rect.x1, rect.y2 - rect.y1);
+      
+      ctx.fillStyle = '#ff0000';
+      ctx.beginPath();
+      ctx.arc(previewPos.x, previewPos.y, 3, 0, Math.PI * 2);
+      ctx.fill();
+    };
+
+    // Draw Hue-Saturation map
+    drawMap(
+      canvasRefs.hs.current,
+      (x, y, width, height) => [
+        (x / width) * 180,
+        ((height - y) / height) * 255,
+        preview.v
+      ],
+      {
+        x1: (minH / 179) * (canvasRefs.hs.current?.width || 1),
+        x2: (maxH / 179) * (canvasRefs.hs.current?.width || 1),
+        y1: (canvasRefs.hs.current?.height || 1) - ((maxS / 255) * (canvasRefs.hs.current?.height || 1)),
+        y2: (canvasRefs.hs.current?.height || 1) - ((minS / 255) * (canvasRefs.hs.current?.height || 1)),
+      },
+      {
+        x: (preview.h / 180) * (canvasRefs.hs.current?.width || 1),
+        y: (canvasRefs.hs.current?.height || 1) - ((preview.s / 255) * (canvasRefs.hs.current?.height || 1)),
+      },
+      (region, canvas) => ({
+        x1: (region.h_min / 179) * canvas.width,
+        x2: (region.h_max / 179) * canvas.width,
+        y1: canvas.height - ((region.s_max / 255) * canvas.height),
+        y2: canvas.height - ((region.s_min / 255) * canvas.height),
+      })
+    );
 
     // Draw Hue-Value map
-    const hvCanvas = canvasRefs.hv.current;
-    if (hvCanvas) {
-      const ctx = hvCanvas.getContext('2d');
-      if (ctx) {
-        const width = hvCanvas.width;
-        const height = hvCanvas.height;
-
-        const imageData = ctx.createImageData(width, height);
-        const data = imageData.data;
-
-        const s = preview.s;
-
-        for (let x = 0; x < width; x++) {
-          for (let y = 0; y < height; y++) {
-            const h = (x / width) * 180;
-            const v = ((height - y) / height) * 255;
-
-            const [r, g, b] = hsvToRgb(h, s, v);
-            const idx = (y * width + x) * 4;
-
-            data[idx] = r;
-            data[idx + 1] = g;
-            data[idx + 2] = b;
-            data[idx + 3] = 255;
-          }
-        }
-
-        ctx.putImageData(imageData, 0, 0);
-
-        ctx.strokeStyle = '#00ff00';
-        ctx.lineWidth = 2;
-        const x1 = (minH / 179) * width;
-        const x2 = (maxH / 179) * width;
-        const y1 = height - ((maxV / 255) * height);
-        const y2 = height - ((minV / 255) * height);
-        ctx.strokeRect(x1, y1, x2 - x1, y2 - y1);
-
-        const previewX = (preview.h / 180) * width;
-        const previewY = height - ((preview.v / 255) * height);
-        ctx.fillStyle = '#ff0000';
-        ctx.beginPath();
-        ctx.arc(previewX, previewY, 3, 0, Math.PI * 2);
-        ctx.fill();
-      }
-    }
+    drawMap(
+      canvasRefs.hv.current,
+      (x, y, width, height) => [
+        (x / width) * 180,
+        preview.s,
+        ((height - y) / height) * 255
+      ],
+      {
+        x1: (minH / 179) * (canvasRefs.hv.current?.width || 1),
+        x2: (maxH / 179) * (canvasRefs.hv.current?.width || 1),
+        y1: (canvasRefs.hv.current?.height || 1) - ((maxV / 255) * (canvasRefs.hv.current?.height || 1)),
+        y2: (canvasRefs.hv.current?.height || 1) - ((minV / 255) * (canvasRefs.hv.current?.height || 1)),
+      },
+      {
+        x: (preview.h / 180) * (canvasRefs.hv.current?.width || 1),
+        y: (canvasRefs.hv.current?.height || 1) - ((preview.v / 255) * (canvasRefs.hv.current?.height || 1)),
+      },
+      (region, canvas) => ({
+        x1: (region.h_min / 179) * canvas.width,
+        x2: (region.h_max / 179) * canvas.width,
+        y1: canvas.height - ((region.v_max / 255) * canvas.height),
+        y2: canvas.height - ((region.v_min / 255) * canvas.height),
+      })
+    );
 
     // Draw Saturation-Value map
-    const svCanvas = canvasRefs.sv.current;
-    if (svCanvas) {
-      const ctx = svCanvas.getContext('2d');
-      if (ctx) {
-        const width = svCanvas.width;
-        const height = svCanvas.height;
-
-        const imageData = ctx.createImageData(width, height);
-        const data = imageData.data;
-
-        const h = preview.h;
-
-        for (let x = 0; x < width; x++) {
-          for (let y = 0; y < height; y++) {
-            const s = (x / width) * 255;
-            const v = ((height - y) / height) * 255;
-
-            const [r, g, b] = hsvToRgb(h, s, v);
-            const idx = (y * width + x) * 4;
-
-            data[idx] = r;
-            data[idx + 1] = g;
-            data[idx + 2] = b;
-            data[idx + 3] = 255;
-          }
-        }
-
-        ctx.putImageData(imageData, 0, 0);
-
-        ctx.strokeStyle = '#00ff00';
-        ctx.lineWidth = 2;
-        const x1 = (minS / 255) * width;
-        const x2 = (maxS / 255) * width;
-        const y1 = height - ((maxV / 255) * height);
-        const y2 = height - ((minV / 255) * height);
-        ctx.strokeRect(x1, y1, x2 - x1, y2 - y1);
-
-        const previewX = (preview.s / 255) * width;
-        const previewY = height - ((preview.v / 255) * height);
-        ctx.fillStyle = '#ff0000';
-        ctx.beginPath();
-        ctx.arc(previewX, previewY, 3, 0, Math.PI * 2);
-        ctx.fill();
-      }
-    }
+    drawMap(
+      canvasRefs.sv.current,
+      (x, y, width, height) => [
+        preview.h,
+        (x / width) * 255,
+        ((height - y) / height) * 255
+      ],
+      {
+        x1: (minS / 255) * (canvasRefs.sv.current?.width || 1),
+        x2: (maxS / 255) * (canvasRefs.sv.current?.width || 1),
+        y1: (canvasRefs.sv.current?.height || 1) - ((maxV / 255) * (canvasRefs.sv.current?.height || 1)),
+        y2: (canvasRefs.sv.current?.height || 1) - ((minV / 255) * (canvasRefs.sv.current?.height || 1)),
+      },
+      {
+        x: (preview.s / 255) * (canvasRefs.sv.current?.width || 1),
+        y: (canvasRefs.sv.current?.height || 1) - ((preview.v / 255) * (canvasRefs.sv.current?.height || 1)),
+      },
+      (region, canvas) => ({
+        x1: (region.s_min / 255) * canvas.width,
+        x2: (region.s_max / 255) * canvas.width,
+        y1: canvas.height - ((region.v_max / 255) * canvas.height),
+        y2: canvas.height - ((region.v_min / 255) * canvas.height),
+      })
+    );
 
     handleMinMaxOutOfBounds();
     if (!drawingState.hs?.isDrawing && !drawingState.hv?.isDrawing && !drawingState.sv?.isDrawing) {

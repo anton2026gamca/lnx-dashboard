@@ -44,6 +44,14 @@ export interface GoalDistanceCalibrationStatus {
   line_height_pixels?: number;
 }
 
+export interface Region {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  color?: string;
+}
+
 export interface DrawRegion {
   id: string;
   x: number;
@@ -51,4 +59,6 @@ export interface DrawRegion {
   width: number;
   height: number;
   hsv?: HSVRange;
+  canvas?: Region;
 }
+

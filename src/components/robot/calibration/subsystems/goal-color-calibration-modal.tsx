@@ -92,19 +92,35 @@ export const GoalColorCalibrationModal: React.FC<GoalColorCalibrationModalProps>
     }));
   };
 
-  const handleRegionChanged = (index: number, newRegion: DrawRegion) => {
+  const handleRegionChanged = (index: number, newRegion: DrawRegion | null) => {
     if (!selectedColor) return;
     
     setRegions((prev) => {
       const updatedRegions = [...prev[selectedColor]];
-      updatedRegions[index] = newRegion;
+      if (newRegion === null) {
+        updatedRegions.splice(index, 1);
+      } else {
+        updatedRegions[index] = newRegion;
+      }
       return {
         ...prev,
         [selectedColor]: updatedRegions,
       };
     });
     
-    const allRegions = [...regions[selectedColor].slice(0, index), newRegion, ...regions[selectedColor].slice(index + 1)];
+    let allRegions;
+    if (newRegion === null) {
+      allRegions = [
+        ...regions[selectedColor].slice(0, index),
+        ...regions[selectedColor].slice(index + 1)
+      ];
+    } else {
+      allRegions = [
+        ...regions[selectedColor].slice(0, index),
+        newRegion,
+        ...regions[selectedColor].slice(index + 1)
+      ];
+    }
     const merged = mergeHsvRegions(allRegions);
     setHsv((prev) => ({
       ...prev,
@@ -260,6 +276,7 @@ export const GoalColorCalibrationModal: React.FC<GoalColorCalibrationModalProps>
                     [selectedColor!]: value,
                   }));
                 }}
+                otherRegions={regions[selectedColor].map((r) => r.hsv).filter((h) => h !== undefined) as HSVRange[]}
               />
             </div>
           )}
