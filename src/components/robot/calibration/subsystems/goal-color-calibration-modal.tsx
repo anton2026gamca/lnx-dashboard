@@ -92,6 +92,26 @@ export const GoalColorCalibrationModal: React.FC<GoalColorCalibrationModalProps>
     }));
   };
 
+  const handleRegionChanged = (index: number, newRegion: DrawRegion) => {
+    if (!selectedColor) return;
+    
+    setRegions((prev) => {
+      const updatedRegions = [...prev[selectedColor]];
+      updatedRegions[index] = newRegion;
+      return {
+        ...prev,
+        [selectedColor]: updatedRegions,
+      };
+    });
+    
+    const allRegions = [...regions[selectedColor].slice(0, index), newRegion, ...regions[selectedColor].slice(index + 1)];
+    const merged = mergeHsvRegions(allRegions);
+    setHsv((prev) => ({
+      ...prev,
+      [selectedColor]: merged,
+    }));
+  }
+
   const handleClearRegions = () => {
     if (!selectedColor) return;
 
@@ -220,6 +240,7 @@ export const GoalColorCalibrationModal: React.FC<GoalColorCalibrationModalProps>
               </h4>
               <CameraRegionDrawer
                 onRegionAdded={handleRegionAdded}
+                onRegionChanged={handleRegionChanged}
                 onClear={handleClearRegions}
                 regions={regions[selectedColor]}
               />

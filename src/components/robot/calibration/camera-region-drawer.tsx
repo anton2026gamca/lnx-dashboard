@@ -10,16 +10,49 @@ import { Button } from '@/components/ui/button';
 import { useVideoStream, useFrameDataUrl } from '@/hooks/useRobot';
 import { robotClient } from '@/lib/robotAPIClient';
 import { DrawRegion, HSVRange } from '@/types/calibration';
+import { HSVPicker } from './HSV-picker';
 
 interface CameraRegionDrawerProps {
   onRegionAdded: (region: DrawRegion) => void;
+  onRegionChanged: (index: number, region: DrawRegion) => void;
   onClear: () => void;
   regions: DrawRegion[];
   fps?: number;
 }
 
+const RegionListItem: React.FC<{ region: DrawRegion; index: number; onChange: (newVal: HSVRange) => void }> = ({ region, index, onChange }) => {
+  const [expanded, setExpanded] = React.useState(false);
+  const [hsv, setHsv] = React.useState<Partial<HSVRange>>(region.hsv || {});
+  React.useEffect(() => { setHsv(region.hsv || {}); }, [region.hsv]);
+
+  const handleChange = (newHsv: Partial<HSVRange>) => {
+    setHsv(newHsv)
+    onChange({h_min: newHsv.h_min ?? 0, s_min: newHsv.s_min ?? 0, v_min: newHsv.v_min ?? 0, h_max: newHsv.h_max ?? 255, s_max: newHsv.s_max ?? 255, v_max: newHsv.v_max ?? 255})
+  }
+
+  return (
+    <li className="bg-main-200 dark:bg-main-900 py-0.5">
+      <div className="flex items-center justify-start cursor-pointer gap-2" onClick={() => setExpanded((v) => !v)}>
+        <span className="ml-2 text-main-500">{expanded ? '▼' : '▶'}</span>
+        <span className="text-sm font-bold text-blue-800 dark:text-blue-200">
+          Region {index + 1}: {region.width}x{region.height} px
+        </span>
+      </div>
+      {expanded && (
+        <div className="p-2">
+          <HSVPicker
+            value={hsv}
+            onChange={handleChange}
+          />
+        </div>
+      )}
+    </li>
+  );
+};
+
 export const CameraRegionDrawer: React.FC<CameraRegionDrawerProps> = ({
   onRegionAdded,
+  onRegionChanged,
   onClear,
   regions,
   fps = 15,
@@ -128,6 +161,18 @@ export const CameraRegionDrawer: React.FC<CameraRegionDrawerProps> = ({
     }
   };
 
+  const handleChangeRegion = (index: number) => (newHsv: HSVRange) => {
+    const region = regions[index];
+    if (!region) return;
+    
+    const updatedRegion = {
+      ...region,
+      hsv: newHsv,
+    };
+    
+    onRegionChanged(index, updatedRegion);
+  };
+
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -222,10 +267,7 @@ export const CameraRegionDrawer: React.FC<CameraRegionDrawerProps> = ({
           <p className="font-bold">Drawn Regions: {regions.length}</p>
           <ul className="space-y-1 mt-1">
             {regions.map((r, idx) => (
-              <li key={r.id} className="bg-main-200 dark:bg-main-900 p-1">
-                Region {idx + 1}: {r.width}x{r.height} px
-                {r.hsv && ` [H:${r.hsv.h_min}-${r.hsv.h_max}]`}
-              </li>
+              <RegionListItem key={idx} region={r} index={idx} onChange={handleChangeRegion(idx)} />
             ))}
           </ul>
         </div>
