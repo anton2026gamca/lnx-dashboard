@@ -14,6 +14,9 @@ interface CanvasRegionDrawerProps {
   width?: number;
   height?: number;
   className?: string;
+  zoom?: number;
+  zoomPos?: { x: number; y: number } | null;
+  containerRef?: React.RefObject<HTMLDivElement | null>;
 }
 
 export const CanvasRegionDrawer: React.FC<CanvasRegionDrawerProps> = ({
@@ -25,6 +28,9 @@ export const CanvasRegionDrawer: React.FC<CanvasRegionDrawerProps> = ({
   width,
   height,
   className = '',
+  zoom = 1,
+  zoomPos = null,
+  containerRef,
 }) => {
   const [isDrawing, setIsDrawing] = useState(false);
   const [startX, setStartX] = useState(0);
@@ -33,14 +39,27 @@ export const CanvasRegionDrawer: React.FC<CanvasRegionDrawerProps> = ({
   const [currentY, setCurrentY] = useState(0);
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
-  const getCanvasCoordinates = (
-    clientX: number,
-    clientY: number
-  ): [number, number] => {
-    if (!canvasRef.current) return [0, 0];
-    const rect = canvasRef.current.getBoundingClientRect();
-    const x = clientX - rect.left;
-    const y = clientY - rect.top;
+  const getCanvasCoordinates = (clientX: number, clientY: number): [number, number] => {
+    if (!canvasRef.current || !containerRef?.current) return [0, 0];
+    
+    const containerRect = containerRef.current.getBoundingClientRect();
+    const containerWidth = containerRect.width;
+    const containerHeight = containerRect.height;
+    
+    let x = clientX - containerRect.left;
+    let y = clientY - containerRect.top;
+    
+    x = Math.max(0, Math.min(containerWidth, x));
+    y = Math.max(0, Math.min(containerHeight, y));
+    
+    if (zoom > 1 && zoomPos) {
+      const zoomOriginX = zoomPos.x * containerWidth;
+      const zoomOriginY = zoomPos.y * containerHeight;
+      
+      x = zoomOriginX + (x - zoomOriginX) / zoom;
+      y = zoomOriginY + (y - zoomOriginY) / zoom;
+    }
+    
     return [x, y];
   };
 

@@ -211,6 +211,9 @@ export const HSVPicker: React.FC<HSVPickerProps> = ({ value, onChange, label = '
         ctx.lineWidth = 1.5;
         ctx.setLineDash([4, 2]);
         ctx.strokeRect(rect.x1, rect.y1, rect.x2 - rect.x1, rect.y2 - rect.y1);
+        ctx.setLineDash([]);
+        ctx.fillStyle = '#00000055';
+        ctx.fillRect(rect.x1, rect.y1, rect.x2 - rect.x1, rect.y2 - rect.y1);
         ctx.restore();
       };
 

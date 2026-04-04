@@ -18,9 +18,64 @@ const RegionListItem: React.FC<{ region: DrawRegion; index: number; onChange: (n
   const [expanded, setExpanded] = React.useState(false);
   const [imageExpanded, setImageExpanded] = React.useState(false);
   const [imageDimensions, setImageDimensions] = React.useState<{ width: number; height: number } | null>(null);
+  const [zoom, setZoom] = React.useState(1);
+  const [zoomPos, setZoomPos] = React.useState<{ x: number; y: number } | null>(null);
+  const [isShiftOrCtrlPressed, setIsShiftOrCtrlPressed] = React.useState(false);
   const imageRef = React.useRef<HTMLImageElement>(null);
+  const imageContainerRef = React.useRef<HTMLDivElement>(null);
   const [hsv, setHsv] = React.useState<Partial<HSVRange>>(region.hsv || {});
   React.useEffect(() => { setHsv(region.hsv || {}); }, [region.hsv]);
+
+  const getImageCoordinates = (clientX: number, clientY: number): { x: number; y: number } | null => {
+    if (!imageContainerRef.current) return null;
+    const rect = imageContainerRef.current.getBoundingClientRect();
+    const containerWidth = rect.width;
+    const containerHeight = rect.height;
+    
+    let x = clientX - rect.left;
+    let y = clientY - rect.top;
+    
+    x = Math.max(0, Math.min(containerWidth, x));
+    y = Math.max(0, Math.min(containerHeight, y));
+    
+    if (zoom > 1 && zoomPos) {
+      const zoomOriginX = zoomPos.x * containerWidth;
+      const zoomOriginY = zoomPos.y * containerHeight;
+      
+      x = zoomOriginX + (x - zoomOriginX) / zoom;
+      y = zoomOriginY + (y - zoomOriginY) / zoom;
+    }
+    
+    return {
+      x: x / containerWidth,
+      y: y / containerHeight,
+    };
+  };
+
+  React.useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.shiftKey || e.ctrlKey) && !isShiftOrCtrlPressed) {
+        setIsShiftOrCtrlPressed(true);
+        setZoom(2);
+      }
+    };
+
+    const handleKeyUp = (e: KeyboardEvent) => {
+      if (!e.shiftKey && !e.ctrlKey) {
+        setIsShiftOrCtrlPressed(false);
+        setZoom(1);
+        setZoomPos(null);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    window.addEventListener('keyup', handleKeyUp);
+
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener('keyup', handleKeyUp);
+    };
+  }, [isShiftOrCtrlPressed]);
 
   const handleChange = (newHsv: Partial<HSVRange>) => {
     setHsv(newHsv)
@@ -38,6 +93,28 @@ const RegionListItem: React.FC<{ region: DrawRegion; index: number; onChange: (n
 
   const canReset = region.originalHsv !== undefined;
 
+  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    const coords = getImageCoordinates(e.clientX, e.clientY);
+    if (coords && isShiftOrCtrlPressed) {
+      setZoomPos(coords);
+    }
+  };
+
+  const handleMouseLeave = () => {
+    if (!isShiftOrCtrlPressed) {
+      setZoom(1);
+      setZoomPos(null);
+    }
+  };
+
+  const handleDeleteClick = () => {
+    onDelete();
+  };
+
+  const handleResetClick = () => {
+    onReset();
+  };
+
   return (
     <li className="bg-main-200 dark:bg-main-900 py-0.5">
       <div className="flex items-center justify-between cursor-pointer gap-2" onClick={() => setExpanded((v) => !v)}>
@@ -47,13 +124,13 @@ const RegionListItem: React.FC<{ region: DrawRegion; index: number; onChange: (n
             Region {index + 1}: {region.width}x{region.height} px
           </span>
         </div>
-        <div className="flex gap-1">
+        <div className="flex gap-1" onClick={(e) => e.stopPropagation()}>
           {canReset && (
-            <Button onClick={() => { onReset(); }} className="bg-main-300 hover:bg-blue-300 text-white dark:bg-main-800 dark:hover:bg-blue-700 border-2 border-blue-500 dark:border-blue-500 text-main-800 dark:text-main-200 text-xs py-0 px-2">
+            <Button onClick={handleResetClick} className="bg-main-300 hover:bg-blue-300 text-white dark:bg-main-800 dark:hover:bg-blue-700 border-2 border-blue-500 dark:border-blue-500 text-main-800 dark:text-main-200 text-xs py-0 px-2">
               Reset
             </Button>
           )}
-          <Button onClick={() => { onDelete(); }} className="bg-main-300 hover:bg-red-300 text-white dark:bg-main-800 dark:hover:bg-red-700 border-2 border-red-500 dark:border-red-500 text-main-800 dark:text-main-200">
+          <Button onClick={handleDeleteClick} className="bg-main-300 hover:bg-red-300 text-white dark:bg-main-800 dark:hover:bg-red-700 border-2 border-red-500 dark:border-red-500 text-main-800 dark:text-main-200">
               Delete
           </Button>
         </div>
@@ -66,32 +143,48 @@ const RegionListItem: React.FC<{ region: DrawRegion; index: number; onChange: (n
                 <span className="text-xs font-bold text-main-700 dark:text-main-300">{imageExpanded ? '▼ Region Image' : '▶ Region Image'}</span>
               </div>
               {imageExpanded && (
-                <div className="p-2 relative bg-black">
-                  <div className="relative inline-block w-full">
-                    <img
-                      ref={imageRef}
-                      src={region.cameraImage}
-                      alt={`Region ${index + 1}`}
-                      className="w-full"
-                      onLoad={handleImageLoad}
-                    />
-                    {imageDimensions && (
-                      <svg
-                        className="absolute top-0 left-0 w-full h-full"
-                        viewBox={`0 0 ${imageDimensions.width} ${imageDimensions.height}`}
-                        preserveAspectRatio="xMidYMid meet"
-                      >
-                        <rect
-                          x={region.x}
-                          y={region.y}
-                          width={region.width}
-                          height={region.height}
-                          stroke="#00ff00"
-                          strokeWidth="3"
-                          fill="none"
-                        />
-                      </svg>
-                    )}
+                <div className="p-2 relative bg-black overflow-hidden">
+                  <div 
+                    ref={imageContainerRef}
+                    className="relative inline-block w-full overflow-hidden"
+                    onMouseMove={handleMouseMove}
+                    onMouseLeave={handleMouseLeave}
+                  >
+                    <div
+                      style={{
+                        transform: zoom > 1 && zoomPos
+                          ? `scale(${zoom})`
+                          : 'scale(1)',
+                        transformOrigin: zoomPos ? `${zoomPos.x * 100}% ${zoomPos.y * 100}%` : 'center',
+                        transition: isShiftOrCtrlPressed ? 'none' : 'transform 0.15s ease-out',
+                        transformBox: 'fill-box',
+                      }}
+                    >
+                      <img
+                        ref={imageRef}
+                        src={region.cameraImage}
+                        alt={`Region ${index + 1}`}
+                        className="w-full block"
+                        onLoad={handleImageLoad}
+                      />
+                      {imageDimensions && (
+                        <svg
+                          className="absolute top-0 left-0 w-full h-full"
+                          viewBox={`0 0 ${imageDimensions.width} ${imageDimensions.height}`}
+                          preserveAspectRatio="xMidYMid meet"
+                        >
+                          <rect
+                            x={region.x}
+                            y={region.y}
+                            width={region.width}
+                            height={region.height}
+                            stroke="#00ff00"
+                            strokeWidth="3"
+                            fill="none"
+                          />
+                        </svg>
+                      )}
+                    </div>
                   </div>
                 </div>
               )}
@@ -132,11 +225,70 @@ export const CameraRegionDrawer: React.FC<CameraRegionDrawerProps> = ({
   const [error, setError] = useState<string | null>(null);
 
   const imageRef = useRef<HTMLImageElement>(null);
+  const imageContainerRef = useRef<HTMLDivElement>(null);
 
   const [fps, setFps] = useState<number>(15);
+  const [zoom, setZoom] = useState(1);
+  const [zoomPos, setZoomPos] = useState<{ x: number; y: number } | null>(null);
+  const [isShiftOrCtrlPressed, setIsShiftOrCtrlPressed] = useState(false);
 
   const { frame, refresh } = useVideoStream(true, fps, false);
   const frameUrl = useFrameDataUrl(frame);
+
+  React.useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.shiftKey || e.ctrlKey) && !isShiftOrCtrlPressed) {
+        setIsShiftOrCtrlPressed(true);
+        setZoom(2);
+      }
+    };
+
+    const handleKeyUp = (e: KeyboardEvent) => {
+      if (!e.shiftKey && !e.ctrlKey) {
+        setIsShiftOrCtrlPressed(false);
+        setZoom(1);
+        setZoomPos(null);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    window.addEventListener('keyup', handleKeyUp);
+
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener('keyup', handleKeyUp);
+    };
+  }, [isShiftOrCtrlPressed]);
+
+  const getImageCoordinates = (clientX: number, clientY: number) => {
+    if (!imageContainerRef.current) return null;
+    const rect = imageContainerRef.current.getBoundingClientRect();
+    let x = clientX - rect.left;
+    let y = clientY - rect.top;
+    x = Math.max(0, Math.min(rect.width, x));
+    y = Math.max(0, Math.min(rect.height, y));
+    if (zoom > 1 && zoomPos) {
+      const zx = zoomPos.x * rect.width;
+      const zy = zoomPos.y * rect.height;
+      x = zx + (x - zx) / zoom;
+      y = zy + (y - zy) / zoom;
+    }
+    return { x: x / rect.width, y: y / rect.height };
+  };
+
+  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    const coords = getImageCoordinates(e.clientX, e.clientY);
+    if (coords && isShiftOrCtrlPressed) {
+      setZoomPos(coords);
+    }
+  };
+
+  const handleMouseLeave = () => {
+    if (!isShiftOrCtrlPressed) {
+      setZoom(1);
+      setZoomPos(null);
+    }
+  };
 
   const handleAddRegion = async (region: Region, canvas: HTMLCanvasElement | null) => {
     if (!canvas || !imageRef.current) return;
@@ -247,13 +399,32 @@ export const CameraRegionDrawer: React.FC<CameraRegionDrawerProps> = ({
           refresh={refresh}
           forceEnabled={true}
         />
-        <div className="relative">
+        <div 
+          ref={imageContainerRef}
+          className="relative overflow-hidden"
+          onMouseMove={handleMouseMove}
+          onMouseLeave={handleMouseLeave}
+        >
           {frameUrl ? (
-            <>
+            <div
+              style={{
+                transform: zoom > 1 && zoomPos
+                  ? `scale(${zoom})`
+                  : 'scale(1)',
+                transformOrigin: zoomPos ? `${zoomPos.x * 100}% ${zoomPos.y * 100}%` : 'center',
+                transition: isShiftOrCtrlPressed ? 'none' : 'transform 0.15s ease-out',
+                transformBox: 'fill-box',
+              }}
+            >
               <img
                 ref={imageRef}
                 src={frameUrl}
                 alt="Camera Feed"
+                style={{
+                  width: '100%',
+                  height: 'auto',
+                  display: 'block',
+                }}
               />
               <CanvasRegionDrawer
                 regions={showRegionsOnCanvas ? regions.map((r) => ({ 
@@ -267,8 +438,11 @@ export const CameraRegionDrawer: React.FC<CameraRegionDrawerProps> = ({
                 className="absolute top-0 left-0 w-full h-full"
                 width={imageRef.current?.clientWidth || undefined}
                 height={imageRef.current?.clientHeight || undefined}
+                zoom={zoom}
+                zoomPos={zoomPos}
+                containerRef={imageContainerRef}
               />
-            </>
+            </div>
           ) : (
             <div className="aspect-video bg-main-300 dark:bg-main-800 flex items-center justify-center">
               <p className="text-sm text-main-600 dark:text-main-400">Camera feed unavailable</p>

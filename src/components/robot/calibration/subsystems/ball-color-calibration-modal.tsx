@@ -56,13 +56,15 @@ export const BallColorCalibrationModal: React.FC<BallColorCalibrationModalProps>
   };
 
   const handleRegionChanged = (index: number, updatedRegion: DrawRegion | null) => {
-    setRegions((prev) =>
-      prev.map((r, i) => (i === index ? (updatedRegion || r) : r))
-    );
-    
     const allRegions = regions.map((r) =>
       r.id === updatedRegion?.id ? updatedRegion : r
     );
+    if (updatedRegion === null) {
+      allRegions.splice(index, 1);
+    }
+
+    setRegions(allRegions);
+
     const merged = mergeHsvRegions(allRegions);
     setHsv(merged);
   }
@@ -150,6 +152,7 @@ export const BallColorCalibrationModal: React.FC<BallColorCalibrationModalProps>
             value={hsv}
             onChange={setHsv}
             label="Ball HSV Range"
+            otherRegions={regions.map((r) => r.hsv).filter((h) => h !== undefined) as HSVRange[]}
           />
         </div>
       )}

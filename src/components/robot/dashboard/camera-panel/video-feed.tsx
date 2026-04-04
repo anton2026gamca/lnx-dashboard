@@ -3,10 +3,12 @@
 import React, { useEffect, useState } from 'react';
 import { useVideoStream, useFrameDataUrl } from '@/hooks/useRobot';
 import { VideoFeedSettings } from './video-feed-settings';
+import { useVideoStreamRefresh } from '@/context/VideoStreamContext';
 
 export const VideoFeed: React.FC<{ forceEnabled?: boolean, forceFPS?: number }> = ({ forceEnabled = false, forceFPS = undefined }) => {
   const [videoEnabled, setVideoEnabledState] = useState(true);
   const [fps, setFpsState] = useState(forceFPS !== undefined ? forceFPS : 5);
+  const { videoRefreshKey } = useVideoStreamRefresh();
 
   useEffect(() => {
     if (forceEnabled === true) {
@@ -34,6 +36,12 @@ export const VideoFeed: React.FC<{ forceEnabled?: boolean, forceFPS?: number }> 
 
   const { frame, refresh } = useVideoStream(videoEnabled, fps, true);
   const frameUrl = useFrameDataUrl(frame);
+
+  useEffect(() => {
+    if (videoEnabled) {
+      refresh();
+    }
+  }, [videoRefreshKey]);
 
   return (
     <div>

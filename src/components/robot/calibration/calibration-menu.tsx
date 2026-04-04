@@ -4,7 +4,7 @@
 
 'use client';
 
-import React, { use, useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Modal } from '@/components/ui/modal';
 import { LineCalibrationModal } from './subsystems/line-calibration-modal';
@@ -13,7 +13,8 @@ import { BallColorCalibrationModal } from './subsystems/ball-color-calibration-m
 import { CameraBallDistanceCalibrationModal } from './subsystems/camera-call-distance-calibration-modal';
 import { GoalDistanceCalibrationModal } from './subsystems/goal-distance-calibration-modal';
 import { ResetCompassModal } from './subsystems/reset-compass-modal';
-import { useMotorSettings, useRobotMode, useVideoStream } from '@/hooks/useRobot';
+import { useMotorSettings, useRobotMode } from '@/hooks/useRobot';
+import { useVideoStreamRefresh } from '@/context/VideoStreamContext';
 
 interface CalibrationMenuProps {
   isOpen: boolean;
@@ -26,6 +27,7 @@ export const CalibrationMenu: React.FC<CalibrationMenuProps> = ({ isOpen, onClos
   const [activeModal, setActiveModal] = useState<ActiveModal>(null);
   const { changeMode } = useRobotMode();
   const { updateSetting } = useMotorSettings();
+  const { forceRefresh } = useVideoStreamRefresh();
 
   const handleSubsystemOpen = (modal: ActiveModal) => {
     setActiveModal(modal);
@@ -37,6 +39,7 @@ export const CalibrationMenu: React.FC<CalibrationMenuProps> = ({ isOpen, onClos
 
   const handleClose = () => {
     setActiveModal(null);
+    forceRefresh();
     onClose();
   }
 

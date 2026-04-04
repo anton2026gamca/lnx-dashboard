@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { JetBrains_Mono } from "next/font/google";
 import { RobotProvider } from "@/context/RobotContext";
+import { VideoStreamProvider } from "@/context/VideoStreamContext";
 import "./globals.css";
 import { ThemeProvider } from "next-themes";
 
@@ -29,9 +30,11 @@ export default function RootLayout({
     >
       <body className="min-h-full flex flex-col bg-main-100 text-main-900 dark:bg-black dark:text-main-100">
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
-          <RobotProvider>
-            {children}
-          </RobotProvider>
+          <VideoStreamProvider>
+            <RobotProvider>
+              {children}
+            </RobotProvider>
+          </VideoStreamProvider>
         </ThemeProvider>
       </body>
     </html>
