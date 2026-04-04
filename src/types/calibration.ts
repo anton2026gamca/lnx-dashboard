@@ -60,5 +60,7 @@ export interface DrawRegion {
   height: number;
   hsv?: HSVRange;
   canvas?: Region;
+  originalHsv?: HSVRange;
+  cameraImage?: string;
 }
 

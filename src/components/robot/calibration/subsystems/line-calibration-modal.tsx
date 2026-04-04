@@ -8,7 +8,7 @@ import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { useLineCalibration } from '@/hooks/useCalibration';
 import { robotClient } from '@/lib/robotAPIClient';
-import { ManualMovementComponent, ModeComponent } from '../../dashboard/control-panel';
+import { ManualMovementComponent, ModeComponent, MotorSettingsMenu, SettingsComponent } from '../../dashboard/control-panel';
 
 interface LineCalibrationModalProps {
   onClose: () => void;
@@ -110,8 +110,11 @@ export const LineCalibrationModal: React.FC<LineCalibrationModalProps> = ({ onCl
 
   return (
     <div className="space-y-3">
-      <ModeComponent />
-      <ManualMovementComponent compact />
+      <div className="space-y-2">
+        <ModeComponent hideAutonomous />
+        <SettingsComponent hideAutonomous hideTabBar />
+        <ManualMovementComponent compact />
+      </div>
 
       {currentPhase === null && (
         <div className="space-y-3">

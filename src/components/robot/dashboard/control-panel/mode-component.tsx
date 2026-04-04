@@ -10,7 +10,7 @@ import { useMotorSettings, useRobotMode } from '@/hooks/useRobot';
 import { robotClient } from '@/lib/robotAPIClient';
 import { RobotMode } from '@/types/robot';
 
-export const ModeComponent: React.FC = () => {
+export const ModeComponent: React.FC<{hideIdle?: boolean, hideManual?: boolean, hideAutonomous?: boolean}> = ({ hideIdle, hideManual, hideAutonomous }) => {
   const { mode, changeMode, loading } = useRobotMode();
   const [localMode, setLocalMode] = useState<RobotMode>(mode);
   const { updateSetting } = useMotorSettings();
@@ -46,33 +46,39 @@ export const ModeComponent: React.FC = () => {
     }
   };
 
-  const getButtonClass = (isLoading: boolean) => isLoading ? 'opacity-50 cursor-not-allowed' : '';
+  const getButtonClass = (isLoading: boolean) => isLoading ? 'flex-1 opacity-50 cursor-not-allowed' : 'flex-1';
 
   return (
     <div className="bg-main-200 dark:bg-main-900 border border-main-300 dark:border-main-800 p-2">
       <h3 className="text-xs font-bold text-main-900 dark:text-white uppercase mb-2">Mode</h3>
-      <div className="grid grid-cols-3 gap-1">
-        <Button
-          active={localMode === 'idle'}
-          onClick={() => !loading && handleModeChange('idle')}
-          className={getButtonClass(loading)}
-        >
-          Idle
-        </Button>
-        <Button
-          active={localMode === 'autonomous'}
-          onClick={() => !loading && handleModeChange('autonomous')}
-          className={getButtonClass(loading)}
-        >
-          Autonomous
-        </Button>
-        <Button
-          active={localMode === 'manual'}
-          onClick={() => !loading && handleModeChange('manual')}
-          className={getButtonClass(loading)}
-        >
-          Manual
-        </Button>
+      <div className="flex gap-1">
+        {!hideIdle && (
+          <Button
+            active={localMode === 'idle'}
+            onClick={() => !loading && handleModeChange('idle')}
+            className={getButtonClass(loading)}
+          >
+            Idle
+          </Button>
+        )}
+        {!hideAutonomous && (
+          <Button
+            active={localMode === 'autonomous'}
+            onClick={() => !loading && handleModeChange('autonomous')}
+            className={getButtonClass(loading)}
+          >
+            Autonomous
+          </Button>
+        )}
+        {!hideManual && (
+          <Button
+            active={localMode === 'manual'}
+            onClick={() => !loading && handleModeChange('manual')}
+            className={getButtonClass(loading)}
+          >
+            Manual
+          </Button>
+        )}
       </div>
     </div>
   );

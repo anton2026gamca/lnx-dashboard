@@ -251,11 +251,11 @@ export const useVideoStream = (enabled: boolean, fps: number = 30, showDetection
  * Hook to convert frame buffer to data URL for image display
  */
 export const useFrameDataUrl = (frame: Uint8Array | null) => {
-  const [dataUrl, setDataUrl] = useState<string | null>(null);
+  const [dataUrl, setDataUrl] = useState<string>('');
 
   useEffect(() => {
     if (!frame) {
-      setDataUrl(null);
+      setDataUrl('');
       return;
     }
 
@@ -264,7 +264,9 @@ export const useFrameDataUrl = (frame: Uint8Array | null) => {
     setDataUrl(url);
 
     return () => URL.revokeObjectURL(url);
-  }, [frame]);  return dataUrl;
+  }, [frame]);
+
+  return dataUrl;
 };
 
 /**
@@ -338,14 +340,17 @@ export const useLogs = () => {
 /**
   * Hook to manage motor settings
   */
-export const useMotorSettings = () => {
+export const useMotorSettings = (interval = 1000) => {
   const [settings, setSettings] = useState<MotorSettings>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     fetchSettings();
-  }, []);
+
+    const timer = setInterval(fetchSettings, interval);
+    return () => clearInterval(timer);
+  }, [interval]);
 
   const fetchSettings = async () => {
     try {

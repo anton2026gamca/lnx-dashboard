@@ -50,11 +50,22 @@ export const BallColorCalibrationModal: React.FC<BallColorCalibrationModalProps>
   const handleRegionAdded = (region: DrawRegion) => {
     setRegions((prev) => [...prev, region]);
 
-    // Merge HSV values from all regions
     const allRegions = [...regions, region];
     const merged = mergeHsvRegions(allRegions);
     setHsv(merged);
   };
+
+  const handleRegionChanged = (index: number, updatedRegion: DrawRegion | null) => {
+    setRegions((prev) =>
+      prev.map((r, i) => (i === index ? (updatedRegion || r) : r))
+    );
+    
+    const allRegions = regions.map((r) =>
+      r.id === updatedRegion?.id ? updatedRegion : r
+    );
+    const merged = mergeHsvRegions(allRegions);
+    setHsv(merged);
+  }
 
   const handleClearRegions = () => {
     setRegions([]);
@@ -123,6 +134,7 @@ export const BallColorCalibrationModal: React.FC<BallColorCalibrationModalProps>
           </h4>
           <CameraRegionDrawer
             onRegionAdded={handleRegionAdded}
+            onRegionChanged={handleRegionChanged}
             onClear={handleClearRegions}
             regions={regions}
           />

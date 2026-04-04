@@ -4,7 +4,7 @@
 
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { use, useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Modal } from '@/components/ui/modal';
 import { LineCalibrationModal } from './subsystems/line-calibration-modal';
@@ -43,9 +43,16 @@ export const CalibrationMenu: React.FC<CalibrationMenuProps> = ({ isOpen, onClos
   useEffect(() => {
     if (isOpen) {
       changeMode('idle');
-      updateSetting('line_avoiding_enabled', false);
+    } else {
+      setActiveModal(null);
     }
   }, [isOpen])
+
+  useEffect(() => {
+    if (activeModal === 'line') {
+      updateSetting('line_avoiding_enabled', false);
+    }
+  }, [activeModal]);
 
   return (
     <Modal
