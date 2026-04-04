@@ -13,7 +13,7 @@ import { BallColorCalibrationModal } from './subsystems/ball-color-calibration-m
 import { CameraBallDistanceCalibrationModal } from './subsystems/camera-call-distance-calibration-modal';
 import { GoalDistanceCalibrationModal } from './subsystems/goal-distance-calibration-modal';
 import { ResetCompassModal } from './subsystems/reset-compass-modal';
-import { useMotorSettings, useRobotMode } from '@/hooks/useRobot';
+import { useMotorSettings, useRobotMode, useVideoStream } from '@/hooks/useRobot';
 
 interface CalibrationMenuProps {
   isOpen: boolean;

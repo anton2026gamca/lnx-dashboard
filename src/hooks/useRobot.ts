@@ -214,6 +214,8 @@ export const useVideoStream = (enabled: boolean, fps: number = 30, showDetection
   const [frame, setFrame] = useState<Uint8Array | null>(null);
   const [isStreaming, setIsStreaming] = useState(false);
 
+  const [refreshKey, setRefreshKey] = useState(0);
+
   useEffect(() => {
     if (!connectionState.isConnected) {
       setIsStreaming(false);
@@ -242,9 +244,13 @@ export const useVideoStream = (enabled: boolean, fps: number = 30, showDetection
       console.error('Failed to subscribe to video:', err);
       setIsStreaming(false);
     }
-  }, [connectionState.isConnected, enabled, fps, showDetections]);
+  }, [connectionState.isConnected, enabled, fps, showDetections, refreshKey]);
 
-  return { frame, isStreaming };
+  const refresh = () => {
+    setRefreshKey((prev) => prev + 1);
+  }
+
+  return { frame, isStreaming, refresh };
 };
 
 /**

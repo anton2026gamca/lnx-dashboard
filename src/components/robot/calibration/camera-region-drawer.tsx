@@ -12,6 +12,7 @@ import { robotClient } from '@/lib/robotAPIClient';
 import { DrawRegion, HSVRange, Region } from '@/types/calibration';
 import { HSVPicker } from './HSV-picker';
 import { CanvasRegionDrawer } from '@/components/ui/canvas-region-drawer';
+import { VideoFeedSettings } from '../dashboard/camera-panel/video-feed-settings';
 
 const RegionListItem: React.FC<{ region: DrawRegion; index: number; onChange: (newVal: HSVRange) => void, onDelete: () => void, onReset: () => void }> = ({ region, index, onChange, onDelete, onReset }) => {
   const [expanded, setExpanded] = React.useState(false);
@@ -118,7 +119,6 @@ interface CameraRegionDrawerProps {
   onRegionChanged: (index: number, region: DrawRegion | null) => void;
   onClear: () => void;
   regions: DrawRegion[];
-  fps?: number;
   showRegionsOnCanvas?: boolean;
 }
 
@@ -127,14 +127,15 @@ export const CameraRegionDrawer: React.FC<CameraRegionDrawerProps> = ({
   onRegionChanged,
   onClear,
   regions,
-  fps = 15,
   showRegionsOnCanvas = false,
 }) => {
   const [error, setError] = useState<string | null>(null);
 
   const imageRef = useRef<HTMLImageElement>(null);
 
-  const { frame } = useVideoStream(true, fps, false);
+  const [fps, setFps] = useState<number>(15);
+
+  const { frame, refresh } = useVideoStream(true, fps, false);
   const frameUrl = useFrameDataUrl(frame);
 
   const handleAddRegion = async (region: Region, canvas: HTMLCanvasElement | null) => {
@@ -147,8 +148,6 @@ export const CameraRegionDrawer: React.FC<CameraRegionDrawerProps> = ({
 
       const scaleX = image.naturalWidth / canvas.clientWidth;
       const scaleY = image.naturalHeight / canvas.clientHeight;
-
-      console.log('Canvas size:', canvas.clientWidth, canvas.clientHeight, 'Image size:', image.naturalWidth, image.naturalHeight, 'Scale:', scaleX, scaleY);
 
       const x = region.x * scaleX;
       const y = region.y * scaleY;
@@ -242,6 +241,12 @@ export const CameraRegionDrawer: React.FC<CameraRegionDrawerProps> = ({
   return (
     <div className="space-y-2">
       <div className="bg-main-200 dark:bg-main-900 border border-main-300 dark:border-main-800 p-2">
+        <VideoFeedSettings
+          fps={fps}
+          setFps={setFps}
+          refresh={refresh}
+          forceEnabled={true}
+        />
         <div className="relative">
           {frameUrl ? (
             <>

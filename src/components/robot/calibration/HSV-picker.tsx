@@ -7,7 +7,7 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { HSVRange, Region } from '@/types/calibration';
-import { GradientSlider } from './GradientSlider';
+import { GradientSlider } from './gradient-slider';
 
 interface HSVPickerProps {
   value: Partial<HSVRange>;
