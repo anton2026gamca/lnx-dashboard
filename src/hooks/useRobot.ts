@@ -255,6 +255,7 @@ export const useVideoStream = (enabled: boolean, fps: number = 30, showDetection
 
 /**
  * Hook to convert frame buffer to data URL for image display
+ * Uses base64 encoding to create persistent URLs that won't be revoked
  */
 export const useFrameDataUrl = (frame: Uint8Array | null) => {
   const [dataUrl, setDataUrl] = useState<string>('');
@@ -265,11 +266,10 @@ export const useFrameDataUrl = (frame: Uint8Array | null) => {
       return;
     }
 
-    const blob = new Blob([new Uint8Array(frame)], { type: 'image/jpeg' });
-    const url = URL.createObjectURL(blob);
-    setDataUrl(url);
-
-    return () => URL.revokeObjectURL(url);
+    const binary = String.fromCharCode.apply(null, Array.from(frame));
+    const base64 = btoa(binary);
+    const persistentUrl = `data:image/jpeg;base64,${base64}`;
+    setDataUrl(persistentUrl);
   }, [frame]);
 
   return dataUrl;

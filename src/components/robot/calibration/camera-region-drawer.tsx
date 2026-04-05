@@ -5,7 +5,7 @@
 
 'use client';
 
-import React, { useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { useVideoStream, useFrameDataUrl } from '@/hooks/useRobot';
 import { robotClient } from '@/lib/robotAPIClient';
@@ -15,16 +15,23 @@ import { CanvasRegionDrawer } from '@/components/ui/canvas-region-drawer';
 import { VideoFeedSettings } from '../dashboard/camera-panel/video-feed-settings';
 
 const RegionListItem: React.FC<{ region: DrawRegion; index: number; onChange: (newVal: HSVRange) => void, onDelete: () => void, onReset: () => void }> = ({ region, index, onChange, onDelete, onReset }) => {
-  const [expanded, setExpanded] = React.useState(false);
-  const [imageExpanded, setImageExpanded] = React.useState(false);
-  const [imageDimensions, setImageDimensions] = React.useState<{ width: number; height: number } | null>(null);
-  const [zoom, setZoom] = React.useState(1);
-  const [zoomPos, setZoomPos] = React.useState<{ x: number; y: number } | null>(null);
-  const [isShiftOrCtrlPressed, setIsShiftOrCtrlPressed] = React.useState(false);
-  const imageRef = React.useRef<HTMLImageElement>(null);
-  const imageContainerRef = React.useRef<HTMLDivElement>(null);
-  const [hsv, setHsv] = React.useState<Partial<HSVRange>>(region.hsv || {});
-  React.useEffect(() => { setHsv(region.hsv || {}); }, [region.hsv]);
+  const [expanded, setExpanded] = useState(false);
+  const [imageExpanded, setImageExpanded] = useState(false);
+  const [hsvPickerExpanded, setHsvPickerExpanded] = useState(false);
+  const [imageDimensions, setImageDimensions] = useState<{ width: number; height: number } | null>(null);
+  const [zoom, setZoom] = useState(1);
+  const [zoomPos, setZoomPos] = useState<{ x: number; y: number } | null>(null);
+  const [isShiftOrCtrlPressed, setIsShiftOrCtrlPressed] = useState(false);
+  const imageRef = useRef<HTMLImageElement>(null);
+  const imageContainerRef = useRef<HTMLDivElement>(null);
+  const [hsv, setHsv] = useState<Partial<HSVRange>>(region.hsv || {});
+  const [debugInfo, setDebugInfo] = useState<string>('');
+  
+  useEffect(() => { 
+    setHsv(region.hsv || {}); 
+    const imageSize = region.cameraImage?.length || 0;
+    setDebugInfo(`Size: ${imageSize > 0 ? (imageSize / 1024).toFixed(1) + 'KB' : 'none'}`);
+  }, [region.hsv, region.cameraImage]);
 
   const getImageCoordinates = (clientX: number, clientY: number): { x: number; y: number } | null => {
     if (!imageContainerRef.current) return null;
@@ -52,7 +59,7 @@ const RegionListItem: React.FC<{ region: DrawRegion; index: number; onChange: (n
     };
   };
 
-  React.useEffect(() => {
+  useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if ((e.shiftKey || e.ctrlKey) && !isShiftOrCtrlPressed) {
         setIsShiftOrCtrlPressed(true);
@@ -143,7 +150,7 @@ const RegionListItem: React.FC<{ region: DrawRegion; index: number; onChange: (n
                 <span className="text-xs font-bold text-main-700 dark:text-main-300">{imageExpanded ? '▼ Region Image' : '▶ Region Image'}</span>
               </div>
               {imageExpanded && (
-                <div className="p-2 relative bg-black overflow-hidden">
+                <div className="p-2 relative bg-main-100 dark:bg-main-950 overflow-hidden">
                   <div 
                     ref={imageContainerRef}
                     className="relative inline-block w-full overflow-hidden"
@@ -156,7 +163,6 @@ const RegionListItem: React.FC<{ region: DrawRegion; index: number; onChange: (n
                           ? `scale(${zoom})`
                           : 'scale(1)',
                         transformOrigin: zoomPos ? `${zoomPos.x * 100}% ${zoomPos.y * 100}%` : 'center',
-                        transition: isShiftOrCtrlPressed ? 'none' : 'transform 0.15s ease-out',
                         transformBox: 'fill-box',
                       }}
                     >
@@ -185,21 +191,26 @@ const RegionListItem: React.FC<{ region: DrawRegion; index: number; onChange: (n
                         </svg>
                       )}
                     </div>
+                    <div className="mt-2 text-xs text-main-600 dark:text-main-400 bg-main-200 dark:bg-main-900 p-1">
+                      {debugInfo}
+                    </div>
                   </div>
                 </div>
               )}
             </div>
           )}
           <div className="bg-main-300 dark:bg-main-800 border border-main-400 dark:border-main-700">
-            <div className="flex items-center justify-between cursor-pointer p-1" onClick={() => setImageExpanded((v) => !v)}>
-              <span className="text-xs font-bold text-main-700 dark:text-main-300">HSV Picker</span>
+            <div className="flex items-center justify-between cursor-pointer p-1" onClick={() => setHsvPickerExpanded((v) => !v)}>
+              <span className="text-xs font-bold text-main-700 dark:text-main-300">{hsvPickerExpanded ? '▼' : '▶'} HSV Picker</span>
             </div>
-            <div className="p-2">
-              <HSVPicker
-                value={hsv}
-                onChange={handleChange}
-              />
-            </div>
+            {hsvPickerExpanded && (
+              <div className="p-2">
+                <HSVPicker
+                  value={hsv}
+                  onChange={handleChange}
+                />
+              </div>
+            )}
           </div>
         </div>
       )}
@@ -235,7 +246,7 @@ export const CameraRegionDrawer: React.FC<CameraRegionDrawerProps> = ({
   const { frame, refresh } = useVideoStream(true, fps, false);
   const frameUrl = useFrameDataUrl(frame);
 
-  React.useEffect(() => {
+  useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if ((e.shiftKey || e.ctrlKey) && !isShiftOrCtrlPressed) {
         setIsShiftOrCtrlPressed(true);
@@ -412,7 +423,6 @@ export const CameraRegionDrawer: React.FC<CameraRegionDrawerProps> = ({
                   ? `scale(${zoom})`
                   : 'scale(1)',
                 transformOrigin: zoomPos ? `${zoomPos.x * 100}% ${zoomPos.y * 100}%` : 'center',
-                transition: isShiftOrCtrlPressed ? 'none' : 'transform 0.15s ease-out',
                 transformBox: 'fill-box',
               }}
             >
