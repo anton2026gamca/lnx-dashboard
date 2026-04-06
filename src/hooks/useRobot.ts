@@ -216,6 +216,10 @@ export const useVideoStream = (enabled: boolean, fps: number = 30, showDetection
 
   const [refreshKey, setRefreshKey] = useState(0);
 
+  const handleFrame = useCallback((frameData: Uint8Array) => {
+    setFrame(frameData);
+  }, []);
+
   useEffect(() => {
     if (!connectionState.isConnected) {
       setIsStreaming(false);
@@ -229,7 +233,7 @@ export const useVideoStream = (enabled: boolean, fps: number = 30, showDetection
       }
 
       const unsubscribe = robotClient.subscribeVideo(
-        (frameData) => setFrame(frameData),
+        handleFrame,
         fps,
         showDetections,
       );
@@ -244,7 +248,7 @@ export const useVideoStream = (enabled: boolean, fps: number = 30, showDetection
       console.error('Failed to subscribe to video:', err);
       setIsStreaming(false);
     }
-  }, [connectionState.isConnected, enabled, fps, showDetections, refreshKey]);
+  }, [connectionState.isConnected, enabled, fps, showDetections, refreshKey, handleFrame]);
 
   const refresh = () => {
     setRefreshKey((prev) => prev + 1);
@@ -269,7 +273,7 @@ export const useFrameDataUrl = (frame: Uint8Array | null) => {
     const binary = String.fromCharCode.apply(null, Array.from(frame));
     const base64 = btoa(binary);
     const persistentUrl = `data:image/jpeg;base64,${base64}`;
-    setDataUrl(persistentUrl);
+    setDataUrl((prev) => prev != persistentUrl ? persistentUrl : prev);
   }, [frame]);
 
   return dataUrl;

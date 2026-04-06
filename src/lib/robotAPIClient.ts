@@ -271,16 +271,6 @@ export class RobotAPIClient {
   }
 
   /**
-   * Get ball calibration data
-   */
-  async getBallCalibration(): Promise<{
-    calibration_constant: number;
-    distance_offset: number;
-  } | null> {
-    return this._emit('get_ball_calibration', {});
-  }
-
-  /**
    * Start goal distance calibration
    * @param initialDistance - Initial distance in mm (default 200)
    * @param lineDistance - Line distance in mm (default 200)
@@ -358,20 +348,96 @@ export class RobotAPIClient {
   }
 
   /**
-   * Set ball color calibration
+   * Set ball color calibration with ranges
    */
-  async setBallCalibration(lower: [number, number, number], upper: [number, number, number]): Promise<void> {
-    await this._emit('set_ball_calibration', { lower, upper });
+  async setBallCalibration(
+    ranges: Array<{
+      lower: [number, number, number];
+      upper: [number, number, number];
+    }>
+  ): Promise<void> {
+    await this._emit('set_ball_calibration', { ranges });
   }
 
   /**
    * Get ball color calibration
    */
   async getBallColorCalibration(): Promise<{
-    lower: [number, number, number];
-    upper: [number, number, number];
+    ranges: Array<{
+      lower: [number, number, number];
+      upper: [number, number, number];
+    }>;
   } | null> {
-    return this._emit('get_ball_color_calibration', {});
+    return this._emit('get_ball_calibration', {});
+  }
+
+  /**
+   * Add a new HSV range for ball color detection
+   */
+  async addBallColorRange(
+    lower: [number, number, number],
+    upper: [number, number, number]
+  ): Promise<
+    Array<{
+      lower: [number, number, number];
+      upper: [number, number, number];
+    }> | null
+  > {
+    const response = await this._emit('add_ball_color_range', { lower, upper });
+    return response?.ranges || null;
+  }
+
+  /**
+   * Remove a ball color range by index
+   */
+  async removeBallColorRange(index: number): Promise<
+    Array<{
+      lower: [number, number, number];
+      upper: [number, number, number];
+    }> | null
+  > {
+    const response = await this._emit('remove_ball_color_range', { index });
+    return response?.ranges || null;
+  }
+
+  /**
+   * Add a new HSV range for goal color detection
+   */
+  async addGoalColorRange(
+    goalColor: 'yellow' | 'blue',
+    lower: [number, number, number],
+    upper: [number, number, number]
+  ): Promise<
+    Array<{
+      lower: [number, number, number];
+      upper: [number, number, number];
+    }> | null
+  > {
+    const response = await this._emit('add_goal_color_range', {
+      goal_color: goalColor,
+      lower,
+      upper,
+    });
+    return response?.ranges || null;
+  }
+
+  /**
+   * Remove a goal color range by index
+   */
+  async removeGoalColorRange(
+    goalColor: 'yellow' | 'blue',
+    index: number
+  ): Promise<
+    Array<{
+      lower: [number, number, number];
+      upper: [number, number, number];
+    }> | null
+  > {
+    const response = await this._emit('remove_goal_color_range', {
+      goal_color: goalColor,
+      index,
+    });
+    return response?.ranges || null;
   }
 
   // ============ Update Subscriptions ============

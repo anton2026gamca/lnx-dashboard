@@ -122,12 +122,16 @@ export interface GoalSettings {
   goal_color?: 'yellow' | 'blue';
   calibration?: {
     yellow?: {
-      lower?: [number, number, number];
-      upper?: [number, number, number];
+      ranges?: Array<{
+        lower: [number, number, number];
+        upper: [number, number, number];
+      }>;
     };
     blue?: {
-      lower?: [number, number, number];
-      upper?: [number, number, number];
+      ranges?: Array<{
+        lower: [number, number, number];
+        upper: [number, number, number];
+      }>;
     };
   };
 }

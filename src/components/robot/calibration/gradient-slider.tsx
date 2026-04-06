@@ -6,7 +6,7 @@ interface GradientSliderProps {
   value: number;
   onChange: (value: number) => void;
   type: 'hue' | 'saturation' | 'value';
-  enableGradient?: boolean;
+  disableGradient?: boolean;
   className?: string;
   previewHSV?: { h: number; s: number; v: number };
 }
@@ -35,7 +35,7 @@ export const GradientSlider: React.FC<GradientSliderProps> = ({
   value,
   onChange,
   type,
-  enableGradient = true,
+  disableGradient = true,
   className = '',
   previewHSV,
 }) => {
@@ -100,7 +100,7 @@ export const GradientSlider: React.FC<GradientSliderProps> = ({
 
   return (
     <>
-      {enableGradient 
+      {!disableGradient 
         ? <div className={`relative w-full h-4 flex items-center ${className}`}
             style={{ userSelect: 'none' }}
           >

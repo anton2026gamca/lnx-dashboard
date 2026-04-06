@@ -24,11 +24,9 @@ const RegionListItem: React.FC<{ region: DrawRegion; index: number; onChange: (n
   const [isShiftOrCtrlPressed, setIsShiftOrCtrlPressed] = useState(false);
   const imageRef = useRef<HTMLImageElement>(null);
   const imageContainerRef = useRef<HTMLDivElement>(null);
-  const [hsv, setHsv] = useState<Partial<HSVRange>>(region.hsv || {});
   const [debugInfo, setDebugInfo] = useState<string>('');
   
   useEffect(() => { 
-    setHsv(region.hsv || {}); 
     const imageSize = region.cameraImage?.length || 0;
     setDebugInfo(`Size: ${imageSize > 0 ? (imageSize / 1024).toFixed(1) + 'KB' : 'none'}`);
   }, [region.hsv, region.cameraImage]);
@@ -85,7 +83,6 @@ const RegionListItem: React.FC<{ region: DrawRegion; index: number; onChange: (n
   }, [isShiftOrCtrlPressed]);
 
   const handleChange = (newHsv: Partial<HSVRange>) => {
-    setHsv(newHsv)
     onChange({h_min: newHsv.h_min ?? 0, s_min: newHsv.s_min ?? 0, v_min: newHsv.v_min ?? 0, h_max: newHsv.h_max ?? 255, s_max: newHsv.s_max ?? 255, v_max: newHsv.v_max ?? 255})
   }
 
@@ -206,7 +203,7 @@ const RegionListItem: React.FC<{ region: DrawRegion; index: number; onChange: (n
             {hsvPickerExpanded && (
               <div className="p-2">
                 <HSVPicker
-                  value={hsv}
+                  value={region.hsv}
                   onChange={handleChange}
                 />
               </div>
@@ -483,7 +480,7 @@ export const CameraRegionDrawer: React.FC<CameraRegionDrawerProps> = ({
           </div>
           <ul className="space-y-1 mt-1">
             {regions.map((r, idx) => (
-              <RegionListItem key={idx} region={r} index={idx} onChange={handleChangeRegion(idx)} onDelete={handleDeleteRegion(idx)} onReset={handleResetRegion(idx)} />
+              <RegionListItem key={r.id} region={r} index={idx} onChange={handleChangeRegion(idx)} onDelete={handleDeleteRegion(idx)} onReset={handleResetRegion(idx)} />
             ))}
           </ul>
         </div>

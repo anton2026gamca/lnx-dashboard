@@ -6,15 +6,19 @@
 'use client';
 
 import React, { useState, useRef, useEffect } from 'react';
-import { HSVRange, Region } from '@/types/calibration';
+import { HSVRange } from '@/types/calibration';
 import { GradientSlider } from './gradient-slider';
 
 interface HSVPickerProps {
-  value: Partial<HSVRange>;
-  onChange: (value: Partial<HSVRange>) => void;
+  value?: Partial<HSVRange>;
+  onChange?: (value: Partial<HSVRange>) => void;
   label?: string;
-  enableGradientSliders?: boolean;
+  disableGradientSliders?: boolean;
+
+  // Optional additional regions to display on the maps for reference
   otherRegions?: HSVRange[];
+  // If true, only show the otherRegions on the maps and disable editing the main region (min/max HSV) - useful for comparing/visualizing multiple regions
+  showOnlyOtherRegions?: boolean;
 }
 
 interface DrawingState {
@@ -45,32 +49,32 @@ const hsvToRgb = (h: number, s: number, v: number): [number, number, number] => 
   ];
 };
 
-export const HSVPicker: React.FC<HSVPickerProps> = ({ value, onChange, label = '', enableGradientSliders = true, otherRegions = [] }) => {
+export const HSVPicker: React.FC<HSVPickerProps> = ({ value, onChange, label = '', disableGradientSliders = false, otherRegions, showOnlyOtherRegions = false }) => {
   const canvasRefs = {
     hs: useRef<HTMLCanvasElement>(null),
     hv: useRef<HTMLCanvasElement>(null),
     sv: useRef<HTMLCanvasElement>(null),
   };
 
-  const [minH, setMinH] = useState(value.h_min ?? 0);
-  const [maxH, setMaxH] = useState(value.h_max ?? 179);
-  const [minS, setMinS] = useState(value.s_min ?? 0);
-  const [maxS, setMaxS] = useState(value.s_max ?? 255);
-  const [minV, setMinV] = useState(value.v_min ?? 0);
-  const [maxV, setMaxV] = useState(value.v_max ?? 255);
+  const [minH, setMinH] = useState(value?.h_min ?? 0);
+  const [maxH, setMaxH] = useState(value?.h_max ?? 179);
+  const [minS, setMinS] = useState(value?.s_min ?? 0);
+  const [maxS, setMaxS] = useState(value?.s_max ?? 255);
+  const [minV, setMinV] = useState(value?.v_min ?? 0);
+  const [maxV, setMaxV] = useState(value?.v_max ?? 255);
 
   useEffect(() => {
-    setMinH(value.h_min ?? 0);
-    setMaxH(value.h_max ?? 179);
-    setMinS(value.s_min ?? 0);
-    setMaxS(value.s_max ?? 255);
-    setMinV(value.v_min ?? 0);
-    setMaxV(value.v_max ?? 255);
-  }, [value.h_min, value.h_max, value.s_min, value.s_max, value.v_min, value.v_max]);
+    setMinH(value?.h_min ?? 0);
+    setMaxH(value?.h_max ?? 179);
+    setMinS(value?.s_min ?? 0);
+    setMaxS(value?.s_max ?? 255);
+    setMinV(value?.v_min ?? 0);
+    setMaxV(value?.v_max ?? 255);
+  }, [value?.h_min, value?.h_max, value?.s_min, value?.s_max, value?.v_min, value?.v_max]);
 
-  const [previewH, setPreviewH] = useState(90);
-  const [previewS, setPreviewS] = useState(128);
-  const [previewV, setPreviewV] = useState(128);
+  const [previewH, setPreviewH] = useState(0);
+  const [previewS, setPreviewS] = useState(255);
+  const [previewV, setPreviewV] = useState(255);
 
   const [drawingState, setDrawingState] = useState<{ [key: string]: DrawingState }>({});
 
@@ -79,7 +83,7 @@ export const HSVPicker: React.FC<HSVPickerProps> = ({ value, onChange, label = '
       ...value,
       ...updates,
     };
-    onChange(newValue);
+    onChange && onChange(newValue);
   };
 
   const handleCanvasMouseDown = (e: React.MouseEvent<HTMLCanvasElement>, canvasKey: string) => {
@@ -106,38 +110,39 @@ export const HSVPicker: React.FC<HSVPickerProps> = ({ value, onChange, label = '
     const width = canvas.width;
     const height = canvas.height;
 
-    const x1 = Math.min(state.startX, x);
-    const x2 = Math.max(state.startX, x);
-    const y1 = Math.min(state.startY, y);
-    const y2 = Math.max(state.startY, y);
+    if (!showOnlyOtherRegions) {
+      const x1 = Math.min(state.startX, x);
+      const x2 = Math.max(state.startX, x);
+      const y1 = Math.min(state.startY, y);
+      const y2 = Math.max(state.startY, y);
 
-    if (canvasKey === 'hs') {
-      const minHNew = Math.round((x1 / width) * 179);
-      const maxHNew = Math.round((x2 / width) * 179);
-      const minSNew = Math.round(((height - y2) / height) * 255);
-      const maxSNew = Math.round(((height - y1) / height) * 255);
-      setMinH(minHNew);
-      setMaxH(maxHNew);
-      setMinS(minSNew);
-      setMaxS(maxSNew);
-    } else if (canvasKey === 'hv') {
-      const minHNew = Math.round((x1 / width) * 179);
-      const maxHNew = Math.round((x2 / width) * 179);
-      const minVNew = Math.round(((height - y2) / height) * 255);
-      const maxVNew = Math.round(((height - y1) / height) * 255);
-      setMinH(minHNew);
-      setMaxH(maxHNew);
-      setMinV(minVNew);
-      setMaxV(maxVNew);
-    } else if (canvasKey === 'sv') {
-      const minSNew = Math.round((x1 / width) * 255);
-      const maxSNew = Math.round((x2 / width) * 255);
-      const minVNew = Math.round(((height - y2) / height) * 255);
-      const maxVNew = Math.round(((height - y1) / height) * 255);
-      setMinS(minSNew);
-      setMaxS(maxSNew);
-      setMinV(minVNew);
-      setMaxV(maxVNew);
+      if (canvasKey === 'hs') {
+        setMinH(Math.round((x1 / width) * 179));
+        setMaxH(Math.round((x2 / width) * 179));
+        setMinS(Math.round(((height - y2) / height) * 255));
+        setMaxS(Math.round(((height - y1) / height) * 255));
+      } else if (canvasKey === 'hv') {
+        setMinH(Math.round((x1 / width) * 179));
+        setMaxH(Math.round((x2 / width) * 179));
+        setMinV(Math.round(((height - y2) / height) * 255));
+        setMaxV(Math.round(((height - y1) / height) * 255));
+      } else if (canvasKey === 'sv') {
+        setMinS(Math.round((x1 / width) * 255));
+        setMaxS(Math.round((x2 / width) * 255));
+        setMinV(Math.round(((height - y2) / height) * 255));
+        setMaxV(Math.round(((height - y1) / height) * 255));
+      }
+    } else {
+      if (canvasKey === 'hs') {
+        setPreviewH(Math.round((x / width) * 179));
+        setPreviewS(Math.round(((height - y) / height) * 255));
+      } else if (canvasKey === 'hv') {
+        setPreviewH(Math.round((x / width) * 179));
+        setPreviewV(Math.round(((height - y) / height) * 255));
+      } else if (canvasKey === 'sv') {
+        setPreviewS(Math.round((x / width) * 255));
+        setPreviewV(Math.round(((height - y) / height) * 255));
+      }
     }
   };
 
@@ -169,9 +174,13 @@ export const HSVPicker: React.FC<HSVPickerProps> = ({ value, onChange, label = '
         canvas.height = parentWidth;
       }
     });
-  }, [minH, maxH, minS, maxS, minV, maxV, previewH, previewS, previewV]);
+  }, [canvasRefs['hs'].current?.parentElement?.clientWidth, canvasRefs['hv'].current?.parentElement?.clientWidth, canvasRefs['sv'].current?.parentElement?.clientWidth]);
 
   useEffect(() => {
+    redraw();
+  }, [minH, maxH, minS, maxS, minV, maxV, previewH, previewS, previewV, otherRegions, showOnlyOtherRegions]);
+
+  const redraw = () => {
     const preview = getPreviewInBounds();
 
     const drawMap = (
@@ -204,7 +213,8 @@ export const HSVPicker: React.FC<HSVPickerProps> = ({ value, onChange, label = '
       const drawRegionRect = (
         ctx: CanvasRenderingContext2D,
         rect: { x1: number; x2: number; y1: number; y2: number },
-        color = '#ffffff'
+        color = '#ffffff',
+        text = ''
       ) => {
         ctx.save();
         ctx.strokeStyle = color;
@@ -214,18 +224,23 @@ export const HSVPicker: React.FC<HSVPickerProps> = ({ value, onChange, label = '
         ctx.setLineDash([]);
         ctx.fillStyle = '#00000055';
         ctx.fillRect(rect.x1, rect.y1, rect.x2 - rect.x1, rect.y2 - rect.y1);
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillStyle = color;
+        ctx.font = '10px sans-serif';
+        ctx.fillText(text, (rect.x1 + rect.x2) / 2, (rect.y1 + rect.y2) / 2);
         ctx.restore();
       };
 
-      otherRegions.forEach((region) => {
-        drawRegionRect(ctx, getRect(region, canvas));
+      otherRegions?.forEach((region, i) => {
+        drawRegionRect(ctx, getRect(region, canvas), '#ffffff', `${i + 1}`);
       });
 
-      console.log(otherRegions);
-
-      ctx.strokeStyle = '#00ff00';
-      ctx.lineWidth = 2;
-      ctx.strokeRect(rect.x1, rect.y1, rect.x2 - rect.x1, rect.y2 - rect.y1);
+      if (!showOnlyOtherRegions) {
+        ctx.strokeStyle = '#00ff00';
+        ctx.lineWidth = 2;
+        ctx.strokeRect(rect.x1, rect.y1, rect.x2 - rect.x1, rect.y2 - rect.y1);
+      }
       
       ctx.fillStyle = '#ff0000';
       ctx.beginPath();
@@ -315,7 +330,7 @@ export const HSVPicker: React.FC<HSVPickerProps> = ({ value, onChange, label = '
     if (!drawingState.hs?.isDrawing && !drawingState.hv?.isDrawing && !drawingState.sv?.isDrawing) {
       handlePreviewOutOfBounds();
     }
-  }, [minH, maxH, minS, maxS, minV, maxV, previewH, previewS, previewV]);
+  };
 
   const getMinInBounds = () => {
     return {
@@ -345,6 +360,9 @@ export const HSVPicker: React.FC<HSVPickerProps> = ({ value, onChange, label = '
   };
 
   const getPreviewInBounds = () => {
+    if (showOnlyOtherRegions) {
+      return { h: previewH, s: previewS, v: previewV };
+    }
     return {
       h: Math.min(Math.max(previewH, minH), maxH),
       s: Math.min(Math.max(previewS, minS), maxS),
@@ -435,12 +453,12 @@ export const HSVPicker: React.FC<HSVPickerProps> = ({ value, onChange, label = '
           <div className="flex gap-2 items-center">
             <label className="text-main-600 dark:text-main-400 block">Preview V</label>
             <GradientSlider
-              min={minV}
-              max={maxV}
+              min={!showOnlyOtherRegions ? minV : 0}
+              max={!showOnlyOtherRegions ? maxV : 255}
               value={previewV}
               onChange={setPreviewV}
               type="value"
-              enableGradient={enableGradientSliders}
+              disableGradient={disableGradientSliders}
               className="flex-1"
               previewHSV={getPreviewInBounds()}
             />
@@ -451,12 +469,12 @@ export const HSVPicker: React.FC<HSVPickerProps> = ({ value, onChange, label = '
           <div className="flex gap-2 items-center">
             <label className="text-main-600 dark:text-main-400 block">Preview S</label>
             <GradientSlider
-              min={minS}
-              max={maxS}
+              min={!showOnlyOtherRegions ? minS : 0}
+              max={!showOnlyOtherRegions ? maxS : 255}
               value={previewS}
               onChange={setPreviewS}
               type="saturation"
-              enableGradient={enableGradientSliders}
+              disableGradient={disableGradientSliders}
               className="flex-1"
               previewHSV={getPreviewInBounds()}
             />
@@ -467,12 +485,12 @@ export const HSVPicker: React.FC<HSVPickerProps> = ({ value, onChange, label = '
           <div className="flex gap-2 items-center">
             <label className="text-main-600 dark:text-main-400 block">Preview H</label>
             <GradientSlider
-              min={minH}
-              max={maxH}
+              min={!showOnlyOtherRegions ? minH : 0}
+              max={!showOnlyOtherRegions ? maxH : 179}
               value={previewH}
               onChange={setPreviewH}
               type="hue"
-              enableGradient={enableGradientSliders}
+              disableGradient={disableGradientSliders}
               className="flex-1"
               previewHSV={getPreviewInBounds()}
             />
@@ -482,188 +500,190 @@ export const HSVPicker: React.FC<HSVPickerProps> = ({ value, onChange, label = '
       </div>
 
       {/* Slider controls */}
-      <div className="space-y-2 text-xs">
-        {/* Hue Sliders */}
-        <div className="flex gap-2 items-center">
-          <label className="text-main-600 dark:text-main-400 min-w-17">H (0-179)</label>
-          <GradientSlider
-            min={0}
-            max={179}
-            value={minH}
-            onChange={(val) => handleSliderChange('h_min', val, maxH)}
-            type="hue"
-            enableGradient={enableGradientSliders}
-            className="flex-1"
-            previewHSV={{h: minH, s: minS, v: minV}}
-          />
-          <input
-            type="number"
-            min="0"
-            max="179"
-            value={minH}
-            onChange={(e) => {
-              const num = Math.min(179, Math.max(0, parseInt(e.target.value) || 0));
-              setMinH(num);
-              updateValue({
-                h_min: num,
-                h_max: maxH,
-                s_min: minS,
-                s_max: maxS,
-                v_min: minV,
-                v_max: maxV,
-              });
-            }}
-            className="w-12 px-0.5 bg-main-200 dark:bg-main-800 border border-main-300 dark:border-main-700 text-main-900 dark:text-white"
-          />
-          <input
-            type="number"
-            min="0"
-            max="179"
-            value={maxH}
-            onChange={(e) => {
-              const num = Math.min(179, Math.max(0, parseInt(e.target.value) || 0));
-              setMaxH(num);
-              updateValue({
-                h_min: minH,
-                h_max: num,
-                s_min: minS,
-                s_max: maxS,
-                v_min: minV,
-                v_max: maxV,
-              });
-            }}
-            className="w-12 px-0.5 bg-main-200 dark:bg-main-800 border border-main-300 dark:border-main-700 text-main-900 dark:text-white"
-          />
-          <GradientSlider
-            min={0}
-            max={179}
-            value={maxH}
-            onChange={(val) => handleSliderChange('h_max', minH, val)}
-            type="hue"
-            enableGradient={enableGradientSliders}
-            className="flex-1"
-            previewHSV={{h: maxH, s: maxS, v: maxV}}
-          />
-        </div>
+      {!showOnlyOtherRegions && (
+        <div className="space-y-2 text-xs">
+          {/* Hue Sliders */}
+          <div className="flex gap-2 items-center">
+            <label className="text-main-600 dark:text-main-400 min-w-17">H (0-179)</label>
+            <GradientSlider
+              min={0}
+              max={179}
+              value={minH}
+              onChange={(val) => handleSliderChange('h_min', val, maxH)}
+              type="hue"
+              disableGradient={disableGradientSliders}
+              className="flex-1"
+              previewHSV={{h: minH, s: minS, v: minV}}
+            />
+            <input
+              type="number"
+              min="0"
+              max="179"
+              value={minH}
+              onChange={(e) => {
+                const num = Math.min(179, Math.max(0, parseInt(e.target.value) || 0));
+                setMinH(num);
+                updateValue({
+                  h_min: num,
+                  h_max: maxH,
+                  s_min: minS,
+                  s_max: maxS,
+                  v_min: minV,
+                  v_max: maxV,
+                });
+              }}
+              className="w-12 px-0.5 bg-main-200 dark:bg-main-800 border border-main-300 dark:border-main-700 text-main-900 dark:text-white"
+            />
+            <input
+              type="number"
+              min="0"
+              max="179"
+              value={maxH}
+              onChange={(e) => {
+                const num = Math.min(179, Math.max(0, parseInt(e.target.value) || 0));
+                setMaxH(num);
+                updateValue({
+                  h_min: minH,
+                  h_max: num,
+                  s_min: minS,
+                  s_max: maxS,
+                  v_min: minV,
+                  v_max: maxV,
+                });
+              }}
+              className="w-12 px-0.5 bg-main-200 dark:bg-main-800 border border-main-300 dark:border-main-700 text-main-900 dark:text-white"
+            />
+            <GradientSlider
+              min={0}
+              max={179}
+              value={maxH}
+              onChange={(val) => handleSliderChange('h_max', minH, val)}
+              type="hue"
+              disableGradient={disableGradientSliders}
+              className="flex-1"
+              previewHSV={{h: maxH, s: maxS, v: maxV}}
+            />
+          </div>
 
-        {/* Saturation Sliders */}
-        <div className="flex gap-2 items-center">
-          <label className="text-main-600 dark:text-main-400 min-w-17">S (0-255)</label>
-          <GradientSlider
-            min={0}
-            max={255}
-            value={minS}
-            onChange={(val) => handleSliderChange('s_min', val, maxS)}
-            type="saturation"
-            enableGradient={enableGradientSliders}
-            className="flex-1"
-            previewHSV={{h: minH, s: minS, v: minV}}
-          />
-          <input
-            type="number"
-            min="0"
-            max="255"
-            value={minS}
-            onChange={(e) => {
-              const num = Math.min(255, Math.max(0, parseInt(e.target.value) || 0));
-              setMinS(num);
-              updateValue({
-                h_min: minH,
-                h_max: maxH,
-                s_min: num,
-                s_max: maxS,
-                v_min: minV,
-                v_max: maxV,
-              });
-            }}
-            className="w-12 px-0.5 bg-main-200 dark:bg-main-800 border border-main-300 dark:border-main-700 text-main-900 dark:text-white"
-          />
-          <input
-            type="number"
-            min="0"
-            max="255"
-            value={maxS}
-            onChange={(e) => {
-              const num = Math.min(255, Math.max(0, parseInt(e.target.value) || 0));
-              setMaxS(num);
-              updateValue({
-                h_min: minH,
-                h_max: maxH,
-                s_min: minS,
-                s_max: num,
-                v_min: minV,
-                v_max: maxV,
-              });
-            }}
-            className="w-12 px-0.5 bg-main-200 dark:bg-main-800 border border-main-300 dark:border-main-700 text-main-900 dark:text-white"
-          />
-          <GradientSlider
-            min={0}
-            max={255}
-            value={maxS}
-            onChange={(val) => handleSliderChange('s_max', minS, val)}
-            type="saturation"
-            enableGradient={enableGradientSliders}
-            className="flex-1"
-            previewHSV={{h: maxH, s: maxS, v: maxV}}
-          />
-        </div>
+          {/* Saturation Sliders */}
+          <div className="flex gap-2 items-center">
+            <label className="text-main-600 dark:text-main-400 min-w-17">S (0-255)</label>
+            <GradientSlider
+              min={0}
+              max={255}
+              value={minS}
+              onChange={(val) => handleSliderChange('s_min', val, maxS)}
+              type="saturation"
+              disableGradient={disableGradientSliders}
+              className="flex-1"
+              previewHSV={{h: minH, s: minS, v: minV}}
+            />
+            <input
+              type="number"
+              min="0"
+              max="255"
+              value={minS}
+              onChange={(e) => {
+                const num = Math.min(255, Math.max(0, parseInt(e.target.value) || 0));
+                setMinS(num);
+                updateValue({
+                  h_min: minH,
+                  h_max: maxH,
+                  s_min: num,
+                  s_max: maxS,
+                  v_min: minV,
+                  v_max: maxV,
+                });
+              }}
+              className="w-12 px-0.5 bg-main-200 dark:bg-main-800 border border-main-300 dark:border-main-700 text-main-900 dark:text-white"
+            />
+            <input
+              type="number"
+              min="0"
+              max="255"
+              value={maxS}
+              onChange={(e) => {
+                const num = Math.min(255, Math.max(0, parseInt(e.target.value) || 0));
+                setMaxS(num);
+                updateValue({
+                  h_min: minH,
+                  h_max: maxH,
+                  s_min: minS,
+                  s_max: num,
+                  v_min: minV,
+                  v_max: maxV,
+                });
+              }}
+              className="w-12 px-0.5 bg-main-200 dark:bg-main-800 border border-main-300 dark:border-main-700 text-main-900 dark:text-white"
+            />
+            <GradientSlider
+              min={0}
+              max={255}
+              value={maxS}
+              onChange={(val) => handleSliderChange('s_max', minS, val)}
+              type="saturation"
+              disableGradient={disableGradientSliders}
+              className="flex-1"
+              previewHSV={{h: maxH, s: maxS, v: maxV}}
+            />
+          </div>
 
-        {/* Value Sliders */}
-        <div className="flex gap-2 items-center">
-          <label className="text-main-600 dark:text-main-400 min-w-17">V (0-255)</label>
-          <GradientSlider
-            min={0}
-            max={255}
-            value={minV}
-            onChange={(val) => handleSliderChange('v_min', val, maxV)}
-            type="value"
-            enableGradient={enableGradientSliders}
-            className="flex-1"
-            previewHSV={{h: minH, s: minS, v: minV}}
-          />
-          <input type="number" min="0" max="255" value={minV}
-            onChange={(e) => {
-              const num = Math.min(255, Math.max(0, parseInt(e.target.value) || 0));
-              setMinV(num);
-              updateValue({
-                h_min: minH,
-                h_max: maxH,
-                s_min: minS,
-                s_max: maxS,
-                v_min: num,
-                v_max: maxV,
-              });
-            }}
-            className="w-12 px-0.5 bg-main-200 dark:bg-main-800 border border-main-300 dark:border-main-700 text-main-900 dark:text-white"
-          />
-          <input type="number" min="0" max="255" value={maxV}
-            onChange={(e) => {
-              const num = Math.min(255, Math.max(0, parseInt(e.target.value) || 0));
-              setMaxV(num);
-              updateValue({
-                h_min: minH,
-                h_max: maxH,
-                s_min: minS,
-                s_max: maxS,
-                v_min: minV,
-                v_max: num,
-              });
-            }}
-            className="w-12 px-0.5 bg-main-200 dark:bg-main-800 border border-main-300 dark:border-main-700 text-main-900 dark:text-white"
-          />
-          <GradientSlider
-            min={0}
-            max={255}
-            value={maxV}
-            onChange={(val) => handleSliderChange('v_max', minV, val)}
-            type="value"
-            enableGradient={enableGradientSliders}
-            className="flex-1"
-            previewHSV={{h: maxH, s: maxS, v: maxV}}
-          />
+          {/* Value Sliders */}
+          <div className="flex gap-2 items-center">
+            <label className="text-main-600 dark:text-main-400 min-w-17">V (0-255)</label>
+            <GradientSlider
+              min={0}
+              max={255}
+              value={minV}
+              onChange={(val) => handleSliderChange('v_min', val, maxV)}
+              type="value"
+              disableGradient={disableGradientSliders}
+              className="flex-1"
+              previewHSV={{h: minH, s: minS, v: minV}}
+            />
+            <input type="number" min="0" max="255" value={minV}
+              onChange={(e) => {
+                const num = Math.min(255, Math.max(0, parseInt(e.target.value) || 0));
+                setMinV(num);
+                updateValue({
+                  h_min: minH,
+                  h_max: maxH,
+                  s_min: minS,
+                  s_max: maxS,
+                  v_min: num,
+                  v_max: maxV,
+                });
+              }}
+              className="w-12 px-0.5 bg-main-200 dark:bg-main-800 border border-main-300 dark:border-main-700 text-main-900 dark:text-white"
+            />
+            <input type="number" min="0" max="255" value={maxV}
+              onChange={(e) => {
+                const num = Math.min(255, Math.max(0, parseInt(e.target.value) || 0));
+                setMaxV(num);
+                updateValue({
+                  h_min: minH,
+                  h_max: maxH,
+                  s_min: minS,
+                  s_max: maxS,
+                  v_min: minV,
+                  v_max: num,
+                });
+              }}
+              className="w-12 px-0.5 bg-main-200 dark:bg-main-800 border border-main-300 dark:border-main-700 text-main-900 dark:text-white"
+            />
+            <GradientSlider
+              min={0}
+              max={255}
+              value={maxV}
+              onChange={(val) => handleSliderChange('v_max', minV, val)}
+              type="value"
+              disableGradient={disableGradientSliders}
+              className="flex-1"
+              previewHSV={{h: maxH, s: maxS, v: maxV}}
+            />
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 };
