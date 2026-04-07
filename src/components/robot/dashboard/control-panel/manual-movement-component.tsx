@@ -9,14 +9,23 @@ import { useRobotMode } from '@/hooks/useRobot';
 import { robotClient } from '@/lib/robotAPIClient';
 
 export const ManualMovementComponent: React.FC<{compact?: boolean}> = ({compact = false}) => {
-  const { mode } = useRobotMode();
+  const { mode, changeMode } = useRobotMode();
   const [keyPressed, setKeyPressed] = useState<Set<string>>(new Set());
 
   useEffect(() => {
-    if (mode !== 'manual') return;
-
     const handleKeyDown = (e: KeyboardEvent) => {
       const key = e.key.toLowerCase();
+      
+      if (key === ' ' && (mode === 'manual' || mode === 'autonomous')) {
+        e.preventDefault();
+        changeMode('idle').catch(err => {
+          console.error('Failed to change mode to idle:', err);
+        });
+        return;
+      }
+      
+      if (mode !== 'manual') return;
+      
       if (['w', 'a', 's', 'd', 'arrowleft', 'arrowright'].includes(key)) {
         e.preventDefault();
         setKeyPressed(prev => new Set(prev).add(key));
@@ -40,7 +49,7 @@ export const ManualMovementComponent: React.FC<{compact?: boolean}> = ({compact 
       window.removeEventListener('keydown', handleKeyDown);
       window.removeEventListener('keyup', handleKeyUp);
     };
-  }, [mode, keyPressed]);
+  }, [mode, keyPressed, changeMode]);
 
   useEffect(() => {
     if (mode !== 'manual' || keyPressed.size === 0) return;
@@ -78,6 +87,9 @@ export const ManualMovementComponent: React.FC<{compact?: boolean}> = ({compact 
         <div>W/S - Forward/Backward</div>
         <div>A/D - Strafe Left/Right</div>
         <div>← / → - Rotate</div>
+        <div className="mt-2 pt-2 border-t border-green-600 dark:border-green-700">
+          <span className="text-yellow-600 dark:text-yellow-400 font-bold">SPACE</span> - Emergency Stop (Idle)
+        </div>
       </div>}
     </div>
   );
