@@ -11,6 +11,7 @@ import { RobotEditForm } from './robot-edit-form';
 import { SavedRobotsList } from './saved-robots-list';
 import { RobotConnection } from '@/types/robot';
 import { Button } from '@/components/ui/button';
+import { ThemeToggle } from '@/components/ui/theme-toggle';
 
 export const RobotConnectionScreen: React.FC = () => {
   const {
@@ -80,10 +81,14 @@ export const RobotConnectionScreen: React.FC = () => {
     <div className="min-h-screen bg-main-100 dark:bg-main-950 p-6">
       <div className="max-w-2xl mx-auto">
         {/* Header */}
-        <div className="mb-6">
-          <h1 className="text-3xl flex items-center justify-center md:text-4xl font-bold text-main-900 dark:text-white mb-2">
+        <div className="my-16 pb-4">
+          <h1 className="text-3xl flex items-center justify-center md:text-4xl font-bold text-main-900 dark:text-white">
             LNX Robot Dashboard
           </h1>
+        </div>
+
+        <div className="absolute top-4 right-4">
+          <ThemeToggle />
         </div>
 
         {/* Current Connection Status */}
