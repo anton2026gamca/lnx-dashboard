@@ -10,7 +10,7 @@ import { Modal } from '@/components/ui/modal';
 import { LineCalibrationModal } from './subsystems/line-calibration-modal';
 import { GoalColorCalibrationModal } from './subsystems/goal-color-calibration-modal';
 import { BallColorCalibrationModal } from './subsystems/ball-color-calibration-modal';
-import { CameraBallDistanceCalibrationModal } from './subsystems/camera-call-distance-calibration-modal';
+import { BallDistanceCalibrationModal } from './subsystems/ball-distance-calibration-modal';
 import { GoalDistanceCalibrationModal } from './subsystems/goal-distance-calibration-modal';
 import { ResetCompassModal } from './subsystems/reset-compass-modal';
 import { useMotorSettings, useRobotMode } from '@/hooks/useRobot';
@@ -147,7 +147,7 @@ export const CalibrationMenu: React.FC<CalibrationMenuProps> = ({ isOpen, onClos
             <BallColorCalibrationModal onClose={handleSubsystemClose} />
           )}
           {activeModal === 'ballDistance' && (
-            <CameraBallDistanceCalibrationModal onClose={handleSubsystemClose} />
+            <BallDistanceCalibrationModal onClose={handleSubsystemClose} />
           )}
           {activeModal === 'goalDistance' && (
             <GoalDistanceCalibrationModal onClose={handleSubsystemClose} />

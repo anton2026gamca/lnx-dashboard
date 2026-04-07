@@ -9,11 +9,11 @@ import { Button } from '@/components/ui/button';
 import { robotClient } from '@/lib/robotAPIClient';
 import { useVideoStream, useFrameDataUrl } from '@/hooks/useRobot';
 
-interface CameraBallDistanceCalibrationModalProps {
+interface BallDistanceCalibrationModalProps {
   onClose: () => void;
 }
 
-export const CameraBallDistanceCalibrationModal: React.FC<CameraBallDistanceCalibrationModalProps> = ({
+export const BallDistanceCalibrationModal: React.FC<BallDistanceCalibrationModalProps> = ({
   onClose,
 }) => {
   const [knownDistance, setKnownDistance] = useState('200');
@@ -21,7 +21,7 @@ export const CameraBallDistanceCalibrationModal: React.FC<CameraBallDistanceCali
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
 
-  const { frame } = useVideoStream(true, 15, false);
+  const { frame } = useVideoStream(true, 15, true);
   const frameUrl = useFrameDataUrl(frame);
 
   const handleCalibrate = async () => {
