@@ -66,47 +66,73 @@ export const CalibrationMenu: React.FC<CalibrationMenuProps> = ({ isOpen, onClos
       className="max-w-5xl"
     >
       {activeModal === null ? (
-        <div>
-          <p className="text-xs text-main-600 dark:text-main-400 mb-3">
+        <div className="space-y-4">
+          <p className="text-xs text-main-600 dark:text-main-400">
             Select a calibration subsystem:
           </p>
-          <div className="grid grid-cols-2 gap-2">
-            <Button
-              onClick={() => handleSubsystemOpen('line')}
-              className="w-full text-center text-xs"
-            >
-              Line Sensors
-            </Button>
-            <Button
-              onClick={() => handleSubsystemOpen('goalColors')}
-              className="w-full text-center text-xs"
-            >
-              Goal Colors
-            </Button>
-            <Button
-              onClick={() => handleSubsystemOpen('ballColor')}
-              className="w-full text-center text-xs"
-            >
-              Ball Color
-            </Button>
-            <Button
-              onClick={() => handleSubsystemOpen('ballDistance')}
-              className="w-full text-center text-xs"
-            >
-              Ball Distance
-            </Button>
-            <Button
-              onClick={() => handleSubsystemOpen('goalDistance')}
-              className="w-full text-center text-xs"
-            >
-              Goal Distance
-            </Button>
-            <Button
-              onClick={() => handleSubsystemOpen('resetCompass')}
-              className="w-full text-center text-xs"
-            >
-              Reset Compass
-            </Button>
+
+          {/* Line Sensors */}
+          <div className="space-y-2">
+            <h3 className="text-xs font-bold text-main-900 dark:text-main-100 px-1">Line Detection</h3>
+            <div className="space-y-1 pt-2 border-t-2 border-main-300 dark:border-main-700">
+              <Button
+                onClick={() => handleSubsystemOpen('line')}
+                className="w-full text-center text-xs"
+              >
+                Line Sensors
+              </Button>
+            </div>
+          </div>
+
+          {/* Ball Detection */}
+          <div className="space-y-2">
+            <h3 className="text-xs font-bold text-main-900 dark:text-main-100 px-1">Ball Detection</h3>
+            <div className="space-y-1 pt-2 border-t-2 border-main-300 dark:border-main-700">
+              <Button
+                onClick={() => handleSubsystemOpen('ballColor')}
+                className="w-full text-center text-xs"
+              >
+                Ball Color
+              </Button>
+              <Button
+                onClick={() => handleSubsystemOpen('ballDistance')}
+                className="w-full text-center text-xs"
+              >
+                Ball Distance
+              </Button>
+            </div>
+          </div>
+
+          {/* Goal Detection */}
+          <div className="space-y-2">
+            <h3 className="text-xs font-bold text-main-900 dark:text-main-100 px-1">Goal Detection</h3>
+            <div className="space-y-1 pt-2 border-t-2 border-main-300 dark:border-main-700">
+              <Button
+                onClick={() => handleSubsystemOpen('goalColors')}
+                className="w-full text-center text-xs"
+              >
+                Goal Colors
+              </Button>
+              <Button
+                onClick={() => handleSubsystemOpen('goalDistance')}
+                className="w-full text-center text-xs"
+              >
+                Goal Distance
+              </Button>
+            </div>
+          </div>
+
+          {/* Orientation */}
+          <div className="space-y-2">
+            <h3 className="text-xs font-bold text-main-900 dark:text-main-100 px-1">Orientation</h3>
+            <div className="space-y-1 pt-2 border-t-2 border-main-300 dark:border-main-700">
+              <Button
+                onClick={() => handleSubsystemOpen('resetCompass')}
+                className="w-full text-center text-xs"
+              >
+                Reset Compass
+              </Button>
+            </div>
           </div>
         </div>
       ) : (
