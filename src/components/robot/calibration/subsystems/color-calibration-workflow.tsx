@@ -8,7 +8,7 @@
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { CameraRegionDrawer } from '../camera-region-drawer';
-import { HSVPicker } from '../HSV-picker';
+import { HSVPicker } from '@/components/ui/HSV-picker';
 import { DrawRegion, HSVRange } from '@/types/calibration';
 import { Eye, EyeOff } from 'lucide-react';
 

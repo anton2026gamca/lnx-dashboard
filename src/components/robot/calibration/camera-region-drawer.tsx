@@ -10,7 +10,7 @@ import { Button } from '@/components/ui/button';
 import { useVideoStream, useFrameDataUrl } from '@/hooks/useRobot';
 import { robotClient } from '@/lib/robotAPIClient';
 import { DrawRegion, HSVRange, Region } from '@/types/calibration';
-import { HSVPicker } from './HSV-picker';
+import { HSVPicker } from '@/components/ui/HSV-picker';
 import { CanvasRegionDrawer } from '@/components/ui/canvas-region-drawer';
 import { VideoFeedSettings } from '../dashboard/camera-panel/video-feed-settings';
 

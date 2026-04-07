@@ -3,8 +3,6 @@
  */
 
 export { CalibrationMenu } from './calibration-menu';
-export { Modal } from '../../ui/modal';
-export { HSVPicker } from './HSV-picker';
 export { CameraRegionDrawer } from './camera-region-drawer';
 
 // Subsystems
