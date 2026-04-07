@@ -30,6 +30,7 @@ export const LineCalibrationModal: React.FC<LineCalibrationModalProps> = ({ onCl
   } | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [fullscreenVisualization, setFullscreenVisualization] = useState(false);
 
   const handleStartPhase = async (phase: 1 | 2) => {
     setLoading(true);
@@ -337,11 +338,96 @@ export const LineCalibrationModal: React.FC<LineCalibrationModalProps> = ({ onCl
 
       {currentPhase === 'manual' && (
         <div className="space-y-3">
-          <h4 className="text-xs font-bold text-main-900 dark:text-white">
-            Manual Threshold Adjustment
-          </h4>
+          <div className="flex justify-between items-center">
+            <h4 className="text-xs font-bold text-main-900 dark:text-white">
+              Manual Threshold Adjustment
+            </h4>
+            <Button
+              onClick={() => setFullscreenVisualization(!fullscreenVisualization)}
+              className="text-xs"
+            >
+              {fullscreenVisualization ? 'Show Table' : 'Full Visualization'}
+            </Button>
+          </div>
 
-          <div className="bg-main-200 dark:bg-main-900 border border-main-300 dark:border-main-800 p-2 overflow-x-auto">
+          {fullscreenVisualization ? (
+            <div className="space-y-2">
+              {thresholds.map((threshold, idx) => {
+                const min = threshold[0];
+                const max = threshold[1];
+                const p1Min = manualData?.phase1_min?.[idx] ?? null;
+                const p1Max = manualData?.phase1_max?.[idx] ?? null;
+                const p2Min = manualData?.phase2_min?.[idx] ?? null;
+                const p2Max = manualData?.phase2_max?.[idx] ?? null;
+                
+                const range = 1000;
+                const p1MinPercent = p1Min !== null ? (p1Min / range) * 100 : 0;
+                const p1MaxPercent = p1Max !== null ? (p1Max / range) * 100 : 0;
+                const p2MinPercent = p2Min !== null ? (p2Min / range) * 100 : 0;
+                const p2MaxPercent = p2Max !== null ? (p2Max / range) * 100 : 0;
+                const minPercent = (min / range) * 100;
+                const maxPercent = (max / range) * 100;
+                
+                return (
+                  <div key={idx} className="space-y-1 flex items-center gap-2">
+                    <div className="text-xs font-semibold text-main-900 dark:text-white min-w-5">{idx}</div>
+                    <div className="relative flex-1 h-14 bg-main-100 dark:bg-main-800 border border-main-300 dark:border-main-600 rounded overflow-hidden">
+                      {p1Min !== null && p1Max !== null && (
+                        <div
+                          className="absolute top-1 h-3 px-1 bg-blue-200 dark:bg-blue-900 opacity-50 border-l-2 border-r-2 border-blue-500 dark:border-blue-400 flex items-center justify-between text-xs font-bold text-blue-900 dark:text-blue-100"
+                          style={{
+                            left: `${p1MinPercent}%`,
+                            right: `${100 - p1MaxPercent}%`,
+                          }}
+                          title={`Phase 1: ${p1Min}-${p1Max}`}
+                        >
+                          {p1MaxPercent - p1MinPercent > 7 && (
+                            <>
+                              <span>{p1Min}</span>
+                              <span>{p1Max}</span>
+                            </>
+                          )}
+                        </div>
+                      )}
+                      {p2Min !== null && p2Max !== null && (
+                        <div
+                          className="absolute top-5 h-3 px-1 bg-green-200 dark:bg-green-900 opacity-50 border-l-2 border-r-2 border-green-500 dark:border-green-400 flex items-center justify-between text-xs font-bold text-green-900 dark:text-green-100"
+                          style={{
+                            left: `${p2MinPercent}%`,
+                            right: `${100 - p2MaxPercent}%`,
+                          }}
+                          title={`Phase 2: ${p2Min}-${p2Max}`}
+                        >
+                          {p2MaxPercent - p2MinPercent > 7 && (
+                            <>
+                              <span>{p2Min}</span>
+                              <span>{p2Max}</span>
+                            </>
+                          )}
+                        </div>
+                      )}
+                      <div
+                        className="absolute top-9 h-3 px-1 bg-orange-300 dark:bg-orange-700 border-l-2 border-r-2 border-orange-600 dark:border-orange-500 flex items-center justify-between text-xs font-bold text-orange-900 dark:text-orange-100"
+                        style={{
+                          left: `${minPercent}%`,
+                          right: `${100 - maxPercent}%`,
+                        }}
+                        title={`Current: ${min}-${max}`}
+                      >
+                        {maxPercent - minPercent > 7 && (
+                          <>
+                            <span>{min}</span>
+                            <span>{max}</span>
+                          </>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          ) : (
+            <div className="bg-main-200 dark:bg-main-900 border border-main-300 dark:border-main-800 p-2 overflow-x-auto">
             <table className="text-xs w-full border-collapse">
               <thead>
                 <tr className="bg-main-300 dark:bg-main-800">
@@ -349,6 +435,7 @@ export const LineCalibrationModal: React.FC<LineCalibrationModalProps> = ({ onCl
                   <th className="px-2 py-2 border border-main-400 dark:border-main-700 w-0">Enabled</th>
                   <th className="px-2 py-2 border border-main-400 dark:border-main-700">Min</th>
                   <th className="px-2 py-2 border border-main-400 dark:border-main-700">Max</th>
+                  <th className="px-2 py-2 border border-main-400 dark:border-main-700">Visualization</th>
                   <th className="px-2 py-2 border border-main-400 dark:border-main-700">Phase 1 Min</th>
                   <th className="px-2 py-2 border border-main-400 dark:border-main-700">Phase 1 Max</th>
                   {manualData?.phase2_min && <th className="px-2 py-2 border border-main-400 dark:border-main-700">Phase 2 Min</th>}
@@ -358,8 +445,8 @@ export const LineCalibrationModal: React.FC<LineCalibrationModalProps> = ({ onCl
               <tbody>
                 {thresholds.map((threshold, idx) => (
                   <tr key={idx} className={`hover:bg-main-200 dark:hover:bg-main-700 ${
-                    enabledSensors[idx] 
-                      ? 'bg-main-100 dark:bg-main-800' 
+                    enabledSensors[idx]
+                      ? 'bg-main-100 dark:bg-main-800'
                       : 'bg-main-50 dark:bg-main-900 opacity-60'
                   }`}>
                     <td className="px-2 py-2 border border-main-300 dark:border-main-700 font-semibold">{idx}</td>
@@ -382,7 +469,6 @@ export const LineCalibrationModal: React.FC<LineCalibrationModalProps> = ({ onCl
                         onChange={(e) => {
                           const newThresholds = [...thresholds];
                           newThresholds[idx] = [parseInt(e.target.value) || 0, threshold[1]];
-                          setThresholds(newThresholds);
                         }}
                         disabled={!enabledSensors[idx]}
                         className="w-16 p-1 w-full bg-main-50 dark:bg-main-900 border border-main-300 dark:border-main-600 rounded text-center disabled:opacity-50 disabled:cursor-not-allowed"
@@ -401,6 +487,58 @@ export const LineCalibrationModal: React.FC<LineCalibrationModalProps> = ({ onCl
                         className="w-16 p-1 w-full bg-main-50 dark:bg-main-900 border border-main-300 dark:border-main-600 rounded text-center disabled:opacity-50 disabled:cursor-not-allowed"
                       />
                     </td>
+                    <td className="px-2 py-2 border border-main-300 dark:border-main-700">
+                      <div className="relative w-full h-8 bg-main-100 dark:bg-main-800 border border-main-300 dark:border-main-600 rounded overflow-hidden">
+                        {(() => {
+                          const min = threshold[0];
+                          const max = threshold[1];
+                          const p1Min = manualData?.phase1_min?.[idx] ?? null;
+                          const p1Max = manualData?.phase1_max?.[idx] ?? null;
+                          const p2Min = manualData?.phase2_min?.[idx] ?? null;
+                          const p2Max = manualData?.phase2_max?.[idx] ?? null;
+                          const range = 1000;
+                          const p1MinPercent = p1Min !== null ? (p1Min / range) * 100 : 0;
+                          const p1MaxPercent = p1Max !== null ? (p1Max / range) * 100 : 0;
+                          const p2MinPercent = p2Min !== null ? (p2Min / range) * 100 : 0;
+                          const p2MaxPercent = p2Max !== null ? (p2Max / range) * 100 : 0;
+                          const minPercent = (min / range) * 100;
+                          const maxPercent = (max / range) * 100;
+                          
+                          return (
+                            <>
+                              {p1Min !== null && p1Max !== null && (
+                                <div
+                                  className="absolute top-0 h-2 bg-blue-200 dark:bg-blue-900 opacity-40 border-l border-r border-blue-500 dark:border-blue-400"
+                                  style={{
+                                    left: `${p1MinPercent}%`,
+                                    right: `${100 - p1MaxPercent}%`,
+                                  }}
+                                  title={`P1: ${p1Min}-${p1Max}`}
+                                />
+                              )}
+                              {p2Min !== null && p2Max !== null && (
+                                <div
+                                  className="absolute top-3 h-2 bg-green-200 dark:bg-green-900 opacity-40 border-l border-r border-green-500 dark:border-green-400"
+                                  style={{
+                                    left: `${p2MinPercent}%`,
+                                    right: `${100 - p2MaxPercent}%`,
+                                  }}
+                                  title={`P2: ${p2Min}-${p2Max}`}
+                                />
+                              )}
+                              <div
+                                className="absolute top-6 h-2 bg-orange-300 dark:bg-orange-700 border-l border-r border-orange-600 dark:border-orange-500"
+                                style={{
+                                  left: `${minPercent}%`,
+                                  right: `${100 - maxPercent}%`,
+                                }}
+                                title={`Current: ${min}-${max}`}
+                              />
+                            </>
+                          );
+                        })()}
+                      </div>
+                    </td>
                     <td className="px-2 py-2 border border-main-300 dark:border-main-700 text-center text-main-700 dark:text-main-300">{manualData?.phase1_min?.[idx] ?? '-'}</td>
                     <td className="px-2 py-2 border border-main-300 dark:border-main-700 text-center text-main-700 dark:text-main-300">{manualData?.phase1_max?.[idx] ?? '-'}</td>
                     {manualData?.phase2_min && <td className="px-2 py-2 border border-main-300 dark:border-main-700 text-center text-main-700 dark:text-main-300">{manualData.phase2_min[idx] ?? '-'}</td>}
@@ -410,6 +548,7 @@ export const LineCalibrationModal: React.FC<LineCalibrationModalProps> = ({ onCl
               </tbody>
             </table>
           </div>
+          )}
 
           <div className="flex gap-1">
             <Button
