@@ -453,7 +453,7 @@ export const LineCalibrationModal: React.FC<LineCalibrationModalProps> = ({ onCl
                     <td className="px-2 py-2 border border-main-300 dark:border-main-700 text-center">
                       <input
                         type="checkbox"
-                        checked={enabledSensors[idx]}
+                        checked={enabledSensors[idx] || true}
                         onChange={(e) => {
                           const newEnabled = [...enabledSensors];
                           newEnabled[idx] = e.target.checked;
