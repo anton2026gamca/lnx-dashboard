@@ -52,20 +52,24 @@ export const ManualMovementComponent: React.FC<{compact?: boolean}> = ({compact 
   }, [mode, keyPressed, changeMode]);
 
   useEffect(() => {
-    if (mode !== 'manual' || keyPressed.size === 0) return;
+    if (mode !== 'manual') return;
 
-    let angle = 0;
-    let speed = 0;
+    let angle = null;
+    let speed = 0.7;
     let rotate = 0;
 
-    if (keyPressed.has('w')) speed = 100;
-    if (keyPressed.has('s')) speed = -100;
-    if (keyPressed.has('a')) angle = 90;
-    if (keyPressed.has('d')) angle = -90;
-    if (keyPressed.has('arrowleft')) rotate = 50;
-    if (keyPressed.has('arrowright')) rotate = -50;
+    if (keyPressed.has('w') && keyPressed.has('a')) angle = -45;
+    else if (keyPressed.has('w') && keyPressed.has('d')) angle = 45;
+    else if (keyPressed.has('s') && keyPressed.has('a')) angle = -135;
+    else if (keyPressed.has('s') && keyPressed.has('d')) angle = 135;
+    else if (keyPressed.has('w')) angle = 0;
+    else if (keyPressed.has('s')) angle = 180;
+    else if (keyPressed.has('a')) angle = -90;
+    else if (keyPressed.has('d')) angle = 90;
+    if (keyPressed.has('arrowleft')) rotate = -0.8;
+    if (keyPressed.has('arrowright')) rotate = 0.8;
 
-    robotClient.setManualControl(angle, speed, rotate).catch(err => {
+    robotClient.setManualControl(angle ?? 0, angle != null ? speed : 0, rotate).catch(err => {
       console.error('Failed to send manual control:', err);
     });
   }, [keyPressed, mode]);

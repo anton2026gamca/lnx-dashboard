@@ -38,6 +38,10 @@ export const ModeComponent: React.FC<{hideIdle?: boolean, hideManual?: boolean, 
     if (newMode === 'autonomous') {
       updateSetting('line_avoiding_enabled', true);
     }
+    if (newMode === 'manual') {
+      updateSetting('line_avoiding_enabled', false);
+      updateSetting('position_based_speed_enabled', false);
+    }
     try {
       await changeMode(newMode);
     } catch (err) {
