@@ -7,7 +7,7 @@ import { SensorCard } from "./sensor-card";
 
 export const GoalDetectionCard: React.FC<{ fdata: FormattedSensorData, targetGoal: string | null }> = ({ fdata, targetGoal }) => (
   <SensorCard label="Goal Detection">
-    <div className="space-y-2 text-xs">
+    <div className="text-xs flex flex-col gap-1">
       <div className="flex justify-between items-center">
         <span>Target Goal:</span>
         <span className={`px-2 font-bold ${

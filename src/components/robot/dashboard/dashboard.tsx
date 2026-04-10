@@ -40,26 +40,26 @@ export const RobotDashboard: React.FC = () => {
 
 
   return (
-    <div className="h-screen bg-main-100 dark:bg-black flex flex-col max-h-screen">
+    <div className="h-screen bg-main-100 dark:bg-black flex flex-col max-h-screen p-1 pt-0">
       {/* Header */}
-      <div className="flex-none mt-2 px-2 mx-2 border-2 bg-main-100 border-main-400 hover:bg-main-200 dark:bg-main-950 dark:border-main-900 dark:hover:bg-main-900 dark:hover:border-main-800">
+      <div className="flex-none bg-main-100 dark:bg-main-950">
         <div className="flex items-center justify-between gap-6">
-          <div className="flex flex-col items-center">
-            <h1 className="text-xl font-bold text-main-900 dark:text-white">
+          <div className="flex items-center justify-center gap-4">
+            <h1 className="text-md font-bold text-main-900 dark:text-white">
               {robot.name}
             </h1>
             <p className="text-xs text-main-600 dark:text-main-400">
               {robot.ip}:{robot.port}
             </p>
           </div>
-          <div className="grid grid-cols-2 gap-2">
+          <div className="grid grid-cols-2 gap-1">
             <Button onClick={disconnectFromRobot} className="border-2 border-red-600 bg-transparent hover:bg-red-600 text-black dark:bg-transparent dark:border-red-500 dark:text-white dark:hover:bg-red-700">Disconnect</Button>
             <ThemeToggle />
           </div>
         </div>
       </div>
 
-      <div className="flex-1 grid grid-cols-10 grid-rows-1 gap-2 p-2 overflow-y-auto">
+      <div className="flex-1 grid grid-cols-10 grid-rows-1 gap-2 overflow-y-auto">
         {/* Left */}
         <div className="col-span-6 h-full flex flex-col items-center justify-center gap-2">
           {/* Video Controls & Stream */}

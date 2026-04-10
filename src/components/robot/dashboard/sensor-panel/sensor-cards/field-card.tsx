@@ -124,7 +124,7 @@ const FieldVisualizer: React.FC<FieldVisualizerProps> = ({
           className="relative bg-green-600 border-2 border-main-100 dark:border-main-600 rounded overflow-hidden flex-1 flex items-center justify-center"
           style={{
             height: `${displayHeight}px`,
-            minHeight: '300px',
+            minHeight: '250px',
             aspectRatio: `${displayWidth} / ${displayHeight}`,
           }}
         >
