@@ -65,25 +65,12 @@ const FieldVisualizer: React.FC<FieldVisualizerProps> = ({
   const displayWidth = FIELD_WIDTH * scale;
   const displayHeight = FIELD_HEIGHT * scale;
   
-  const rotationAngle = targetGoal === 'yellow' ? 180 : 0;
-  
-  const transformCoordinates = (x: number, y: number, rotation: number) => {
-    const rad = (rotation * Math.PI) / 180;
-    const cos = Math.cos(rad);
-    const sin = Math.sin(rad);
-    return {
-      x: x * cos - y * sin,
-      y: x * sin + y * cos,
-    };
-  };
-  
   let robotPixelX: number | null = null;
   let robotPixelY: number | null = null;
   
   if (robotX !== null && robotY !== null) {
-    const transformed = transformCoordinates(robotX, robotY, rotationAngle);
-    robotPixelX = displayWidth / 2 + transformed.x * scale;
-    robotPixelY = displayHeight / 2 + transformed.y * scale;
+    robotPixelX = displayWidth / 2 + robotX * scale;
+    robotPixelY = robotY * scale;
   }
   
   let ballPixelX: number | null = null;
@@ -95,17 +82,15 @@ const FieldVisualizer: React.FC<FieldVisualizerProps> = ({
       const irAngleRad = ((irBallAngle + (robotHeading || 0)) * Math.PI) / 180;
       const ballX = robotX + irBallDistance * Math.cos(irAngleRad);
       const ballY = robotY + irBallDistance * Math.sin(irAngleRad);
-      const transformed = transformCoordinates(ballX, ballY, rotationAngle);
-      ballPixelX = displayWidth / 2 + transformed.x * scale;
-      ballPixelY = displayHeight / 2 + transformed.y * scale;
+      ballPixelX = displayWidth / 2 + ballX * scale;
+      ballPixelY = displayHeight / 2 + ballY * scale;
       ballSource = 'ir';
     } else if (camBallDetected && camBallAngle !== null && camBallDistance !== null && camBallDistance > 0) {
       const camAngleRad = ((camBallAngle + (robotHeading || 0)) * Math.PI) / 180;
       const ballX = robotX + camBallDistance * Math.cos(camAngleRad);
       const ballY = robotY + camBallDistance * Math.sin(camAngleRad);
-      const transformed = transformCoordinates(ballX, ballY, rotationAngle);
-      ballPixelX = displayWidth / 2 + transformed.x * scale;
-      ballPixelY = displayHeight / 2 + transformed.y * scale;
+      ballPixelX = displayWidth / 2 + ballX * scale;
+      ballPixelY = displayHeight / 2 + ballY * scale;
       ballSource = 'camera';
     }
   }
@@ -153,7 +138,7 @@ const FieldVisualizer: React.FC<FieldVisualizerProps> = ({
               strokeWidth={1}
             />
             
-            {/* Goal areas - top (target when blue) */}
+            {/* Goal areas - top */}
             <rect
               x={(displayWidth - GOAL_AREA_WIDTH * scale) / 2}
               y={0}
@@ -164,7 +149,7 @@ const FieldVisualizer: React.FC<FieldVisualizerProps> = ({
               strokeWidth={1}
             />
             
-            {/* Goal areas - bottom (target when yellow) */}
+            {/* Goal areas - bottom */}
             <rect
               x={(displayWidth - GOAL_AREA_WIDTH * scale) / 2}
               y={displayHeight - GOAL_AREA_DEPTH * scale}
@@ -175,10 +160,10 @@ const FieldVisualizer: React.FC<FieldVisualizerProps> = ({
               strokeWidth={1}
             />
             
-            {/* Blue goal (top) */}
+            {/* Blue goal */}
             <rect
               x={(displayWidth - GOAL_WIDTH * scale) / 2}
-              y={0}
+              y={targetGoal === 'blue' ? 0 : displayHeight - 5}
               width={GOAL_WIDTH * scale}
               height={5}
               fill="#3b82f6"
@@ -189,7 +174,7 @@ const FieldVisualizer: React.FC<FieldVisualizerProps> = ({
             {/* Yellow goal (bottom) */}
             <rect
               x={(displayWidth - GOAL_WIDTH * scale) / 2}
-              y={displayHeight - 5}
+              y={targetGoal === 'yellow' ? 0 : displayHeight - 5}
               width={GOAL_WIDTH * scale}
               height={5}
               fill="#facc15"
@@ -231,7 +216,7 @@ const FieldVisualizer: React.FC<FieldVisualizerProps> = ({
                   <div
                     className="absolute w-0.5 h-2 bg-white left-1/2 bottom-1/2 origin-bottom"
                     style={{
-                      transform: `translateX(-50%) rotate(${robotHeading + rotationAngle}deg)`,
+                      transform: `translateX(-50%) rotate(${robotHeading}deg)`,
                     }}
                   ></div>
                 )}
