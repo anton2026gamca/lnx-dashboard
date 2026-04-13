@@ -5,12 +5,13 @@
 
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { CameraRegionDrawer } from '../camera-region-drawer';
 import { HSVPicker } from '@/components/ui/HSV-picker';
 import { DrawRegion, HSVRange } from '@/types/calibration';
-import { Eye, EyeOff } from 'lucide-react';
+import { Eye, EyeOff, Download, Upload } from 'lucide-react';
+import { ManualMovementComponent, ModeComponent, SettingsComponent } from '../../dashboard/control-panel';
 
 interface ColorCalibrationWorkflowProps {
   regions: DrawRegion[];
@@ -22,6 +23,63 @@ interface ColorCalibrationWorkflowProps {
   title: string;
   loading?: boolean;
   error?: string | null;
+}
+
+// Helper functions for CSV export/import
+function regionsToCSV(regions: DrawRegion[]): string {
+  if (regions.length === 0) return 'id,x,y,width,height,h_min,h_max,s_min,s_max,v_min,v_max';
+  
+  const headers = ['id', 'x', 'y', 'width', 'height', 'h_min', 'h_max', 's_min', 's_max', 'v_min', 'v_max'];
+  const rows = regions.map((region) => {
+    const hsv = region.hsv || { h_min: 0, h_max: 179, s_min: 0, s_max: 255, v_min: 0, v_max: 255 };
+    return [
+      `"${region.id}"`,
+      region.x,
+      region.y,
+      region.width,
+      region.height,
+      hsv.h_min,
+      hsv.h_max,
+      hsv.s_min,
+      hsv.s_max,
+      hsv.v_min,
+      hsv.v_max,
+    ].join(',');
+  });
+  
+  return [headers.join(','), ...rows].join('\n');
+}
+
+function csvToRegions(csv: string): DrawRegion[] {
+  const lines = csv.trim().split('\n');
+  if (lines.length < 2) return [];
+  
+  const regions: DrawRegion[] = [];
+  
+  for (let i = 1; i < lines.length; i++) {
+    const values = lines[i].split(',').map(v => v.replace(/^"|"$/g, '').trim());
+    if (values.length < 5) continue;
+    
+    const region: DrawRegion = {
+      id: values[0] || `imported-${Date.now()}-${i}`,
+      x: parseInt(values[1]) || 0,
+      y: parseInt(values[2]) || 0,
+      width: parseInt(values[3]) || 0,
+      height: parseInt(values[4]) || 0,
+      hsv: {
+        h_min: parseInt(values[5]) || 0,
+        h_max: parseInt(values[6]) || 179,
+        s_min: parseInt(values[7]) || 0,
+        s_max: parseInt(values[8]) || 255,
+        v_min: parseInt(values[9]) || 0,
+        v_max: parseInt(values[10]) || 255,
+      },
+      canvas: { x: 0, y: 0, width: 0, height: 0 },
+    };
+    regions.push(region);
+  }
+  
+  return regions;
 }
 
 export const ColorCalibrationWorkflow: React.FC<ColorCalibrationWorkflowProps> = ({
@@ -37,6 +95,8 @@ export const ColorCalibrationWorkflow: React.FC<ColorCalibrationWorkflowProps> =
 }) => {
   const [step, setStep] = useState<'regions' | 'preview'>('regions');
   const [disabledRegionsStep2, setDisabledRegionsStep2] = useState<Array<number>>([]);
+  const [hoveredRegionIdx, setHoveredRegionIdx] = useState<number | undefined>(undefined);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleRegionAdded = (region: DrawRegion) => {
     onRegionAdded(region);
@@ -75,12 +135,52 @@ export const ColorCalibrationWorkflow: React.FC<ColorCalibrationWorkflowProps> =
     await onApply();
   };
 
+  const handleExportCSV = () => {
+    const csv = regionsToCSV(regions);
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', `calibration-regions-${Date.now()}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  const handleImportCSV = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const csv = e.target?.result as string;
+      const importedRegions = csvToRegions(csv);
+      
+      onClear();
+      importedRegions.forEach(region => onRegionAdded(region));
+    };
+    reader.readAsText(file);
+    
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
   return (
     <div className="space-y-3">
       <h3 className="text-sm font-bold text-main-900 dark:text-white">{title}</h3>
 
       {step === 'regions' ? (
         <div className="flex flex-col gap-2">
+          <ModeComponent hideAutonomous />
+          <SettingsComponent hideAutonomous hideTabBar />
+          <ManualMovementComponent compact />
+
           <CameraRegionDrawer
             onRegionAdded={handleRegionAdded}
             onRegionChanged={handleRegionChanged}
@@ -95,6 +195,29 @@ export const ColorCalibrationWorkflow: React.FC<ColorCalibrationWorkflowProps> =
             >
               + Add Manual Region
             </Button>
+            <Button
+              onClick={handleExportCSV}
+              className="flex-1 text-xs"
+              title="Export regions to CSV"
+            >
+              <Download size={14} className="mr-1" />
+              Export
+            </Button>
+            <Button
+              onClick={handleImportCSV}
+              className="flex-1 text-xs"
+              title="Import regions from CSV"
+            >
+              <Upload size={14} className="mr-1" />
+              Import
+            </Button>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".csv"
+              onChange={handleFileSelect}
+              className="hidden"
+            />
           </div>
 
           {error && (
@@ -121,7 +244,22 @@ export const ColorCalibrationWorkflow: React.FC<ColorCalibrationWorkflowProps> =
           <div className="bg-main-200 dark:bg-main-900 border border-main-300 dark:border-main-800 p-2 rounded">
             <HSVPicker
               label="HSV Ranges"
-              otherRegions={regions.map((r) => r.hsv).filter((h, idx) => h !== undefined && !disabledRegionsStep2.includes(idx)) as HSVRange[]}
+              otherRegions={
+                hoveredRegionIdx !== undefined && hoveredRegionIdx !== null
+                  ? regions[hoveredRegionIdx]?.hsv
+                    ? [regions[hoveredRegionIdx].hsv as HSVRange]
+                    : []
+                  : regions
+                      .map((r) => r.hsv)
+                      .filter((h, idx) => h !== undefined && !disabledRegionsStep2.includes(idx)) as HSVRange[]
+              }
+              otherRegionsLabels={
+                hoveredRegionIdx !== undefined && hoveredRegionIdx !== null
+                  ? [`${hoveredRegionIdx + 1}`]
+                  : regions
+                      .map((_, idx) => `${idx + 1}`)
+                      .filter((_, idx) => !disabledRegionsStep2.includes(idx))
+              }
               showOnlyOtherRegions
             />
           </div>
@@ -145,6 +283,8 @@ export const ColorCalibrationWorkflow: React.FC<ColorCalibrationWorkflowProps> =
                     key={idx}
                     type="button"
                     onClick={toggle}
+                    onMouseEnter={() => setHoveredRegionIdx(idx)}
+                    onMouseLeave={() => setHoveredRegionIdx(undefined)}
                     className="focus:outline-none flex items-center gap-2 w-full hover:bg-main-200 dark:hover:bg-main-800 p-0.5 cursor-pointer"
                   >
                     {enabled ? (

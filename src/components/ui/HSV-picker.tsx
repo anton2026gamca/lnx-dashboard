@@ -17,6 +17,7 @@ interface HSVPickerProps {
 
   // Optional additional regions to display on the maps for reference
   otherRegions?: HSVRange[];
+  otherRegionsLabels?: string[];
   // If true, only show the otherRegions on the maps and disable editing the main region (min/max HSV) - useful for comparing/visualizing multiple regions
   showOnlyOtherRegions?: boolean;
 }
@@ -49,7 +50,7 @@ const hsvToRgb = (h: number, s: number, v: number): [number, number, number] => 
   ];
 };
 
-export const HSVPicker: React.FC<HSVPickerProps> = ({ value, onChange, label = '', disableGradientSliders = false, otherRegions, showOnlyOtherRegions = false }) => {
+export const HSVPicker: React.FC<HSVPickerProps> = ({ value, onChange, label = '', disableGradientSliders = false, otherRegions, otherRegionsLabels, showOnlyOtherRegions = false }) => {
   const canvasRefs = {
     hs: useRef<HTMLCanvasElement>(null),
     hv: useRef<HTMLCanvasElement>(null),
@@ -233,7 +234,7 @@ export const HSVPicker: React.FC<HSVPickerProps> = ({ value, onChange, label = '
       };
 
       otherRegions?.forEach((region, i) => {
-        drawRegionRect(ctx, getRect(region, canvas), '#ffffff', `${i + 1}`);
+        drawRegionRect(ctx, getRect(region, canvas), '#ffffff', `${otherRegionsLabels?.[i] || ''}`);
       });
 
       if (!showOnlyOtherRegions) {
