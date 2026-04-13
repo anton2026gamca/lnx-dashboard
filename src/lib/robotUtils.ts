@@ -46,9 +46,9 @@ export const formatSensorData = (data: SensorData | null, goalDetection: GoalDet
           detected: true,
         }
       : { angle: '---', distance: '---', detected: false },
-    camera_ball: data?.camera_ball
+    camera_ball: data?.camera_ball && data.camera_ball.detected
       ? {
-          detected: data.camera_ball.detected ? 'Yes' : 'No',
+          detected: 'Yes',
           angle: data.camera_ball.angle ? `${normalizeAngle(data.camera_ball.angle).toFixed(1)}°` : 'N/A',
           distance: data.camera_ball.distance ? `${data.camera_ball.distance.toFixed(0)}mm` : 'N/A',
         }
