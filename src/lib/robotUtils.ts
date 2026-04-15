@@ -60,7 +60,7 @@ export const formatSensorData = (data: SensorData | null, goalDetection: GoalDet
           thresholds: data.line.thresholds.map((t, _) => `${t[0]}-${t[1]}`),
         }
       : { detected: new Array(12).fill('No'), raw: new Array(12).fill(''), thresholds: new Array(12).fill('__-__') },
-    motors: data?.motors ? data.motors.map((m, _) => `${(m).toFixed(0)}%`) : ['--', '--', '--', '--'],
+    motors: data?.motors ? data.motors.map((m, _) => `${(m).toFixed(0)}`) : ['--', '--', '--', '--'],
     goal: goalDetection && goalDetection.goal_detected
       ? {
           detected: true,

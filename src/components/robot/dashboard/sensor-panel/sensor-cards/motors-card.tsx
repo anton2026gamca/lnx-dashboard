@@ -1,6 +1,6 @@
 'use client';
 
-import { FormattedSensorData } from '@/types/robot';
+import { FormattedSensorData, SensorData } from '@/types/robot';
 import { SensorCard, SensorProperty, AngleIndicator } from './sensor-card';
 
 
@@ -37,7 +37,7 @@ const MotorVisualizer: React.FC<{ speeds: number[] }> = ({ speeds }) => {
 };
 
 
-export const MotorsCard: React.FC<{ fdata: FormattedSensorData }> = ({ fdata }) => (
+export const MotorsCard: React.FC<{ data: SensorData | null, fdata: FormattedSensorData }> = ({ data, fdata }) => (
   <SensorCard label="Motors">
     <div className="relative grid grid-cols-2 gap-y-2 gap-x-12">
       {[0, 1, 2, 3].map((i) => (
@@ -49,7 +49,7 @@ export const MotorsCard: React.FC<{ fdata: FormattedSensorData }> = ({ fdata }) 
       ))}
       <div className="flex items-center justify-center absolute inset-0 pointer-events-none">
         <div className="outline-2 outline-main-500 dark:outline-main-500 hover:outline-main-400 hover:dark:outline-main-400 bg-main-200 dark:bg-main-900 pointer-events-auto p-2">
-          <MotorVisualizer speeds={Object.values(fdata.motors).map(Number)} />
+          <MotorVisualizer speeds={data?.motors || []} />
         </div>
       </div>
     </div>

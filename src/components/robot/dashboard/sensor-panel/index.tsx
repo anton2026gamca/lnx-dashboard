@@ -40,7 +40,7 @@ export const SensorPanel: React.FC = () => {
         <LineSensorsCard data={sensorData} fdata={formattedData} />
         <GoalDetectionCard fdata={formattedData} targetGoal={targetGoal} />
         <BallDetectionCard data={sensorData} fdata={formattedData} />
-        <MotorsCard fdata={formattedData} />
+        <MotorsCard data={sensorData} fdata={formattedData} />
         <FieldCard className='col-span-2 row-span-2' data={sensorData} fdata={formattedData} targetGoal={targetGoal} position={position} />
         <HardwareStateCard fdata={formattedData} />
       </div>
