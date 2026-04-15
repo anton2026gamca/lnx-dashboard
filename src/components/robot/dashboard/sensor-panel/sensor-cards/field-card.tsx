@@ -73,25 +73,20 @@ const FieldVisualizer: React.FC<FieldVisualizerProps> = ({
     robotPixelY = robotY * scale;
   }
   
-  let ballPixelX: number | null = null;
-  let ballPixelY: number | null = null;
-  let ballSource: 'ir' | 'camera' | null = null;
-  
+  let ballCamX: number | null = null;
+  let ballCamY: number | null = null;
+  let ballIRAngle: number | null = null;
+
   if (robotX !== null && robotY !== null) {
     if (irBallDetected && irBallAngle !== null && irBallDistance !== null && irBallDistance > 0) {
-      const irAngleRad = ((irBallAngle + (robotHeading || 0)) * Math.PI) / 180;
-      const ballX = robotX + irBallDistance * Math.cos(irAngleRad);
-      const ballY = robotY + irBallDistance * Math.sin(irAngleRad);
-      ballPixelX = displayWidth / 2 + ballX * scale;
-      ballPixelY = displayHeight / 2 + ballY * scale;
-      ballSource = 'ir';
-    } else if (camBallDetected && camBallAngle !== null && camBallDistance !== null && camBallDistance > 0) {
-      const camAngleRad = ((camBallAngle + (robotHeading || 0)) * Math.PI) / 180;
+      ballIRAngle = -90 + irBallAngle + (robotHeading || 0);
+    }
+    if (camBallDetected && camBallAngle !== null && camBallDistance !== null && camBallDistance > 0) {
+      const camAngleRad = (-90 + camBallAngle + (robotHeading || 0)) / 180 * Math.PI;
       const ballX = robotX + camBallDistance * Math.cos(camAngleRad);
       const ballY = robotY + camBallDistance * Math.sin(camAngleRad);
-      ballPixelX = displayWidth / 2 + ballX * scale;
-      ballPixelY = displayHeight / 2 + ballY * scale;
-      ballSource = 'camera';
+      ballCamX = displayWidth / 2 + ballX * scale;
+      ballCamY = ballY * scale;
     }
   }
 
@@ -101,7 +96,6 @@ const FieldVisualizer: React.FC<FieldVisualizerProps> = ({
         <SensorProperty label="X (mm)"     inline={true} value={robotX !== null ? robotX.toFixed(0) : '---'} />
         <SensorProperty label="Y (mm)"     inline={true} value={robotY !== null ? robotY.toFixed(0) : '---'} />
         <SensorProperty label="Confidence" inline={true} value={confidence !== null && confidence !== undefined ? confidence : '---'} />
-        <SensorProperty label="Ball"       inline={true} value={ballSource ? ballSource.toUpperCase() : '---'} />
       </div>
 
       <div className="flex flex-col gap-2 items-center w-full h-full" ref={containerRef}>
@@ -183,20 +177,54 @@ const FieldVisualizer: React.FC<FieldVisualizerProps> = ({
             />
           </svg>
 
-          {/* Ball position (IR) */}
-          {ballSource === 'ir' && ballPixelX !== null && ballPixelY !== null && (
-            <div
-              className="absolute w-2 h-2 bg-orange-500 rounded-full border border-orange-700 transform -translate-x-1/2 -translate-y-1/2 z-10"
-              style={{ left: `${ballPixelX}px`, top: `${ballPixelY}px` }}
-              title={`Ball (IR): Distance ${irBallDistance?.toFixed(0)}mm, Angle ${irBallAngle?.toFixed(1)}°`}
-            ></div>
+          {/* Ball IR Arrow (visualize angle only) */}
+          {ballIRAngle !== null && robotPixelX !== null && robotPixelY !== null && (
+            <svg
+              className="absolute z-10 pointer-events-none"
+              style={{ left: 0, top: 0, width: '100%', height: '100%' }}
+            >
+              {(() => {
+                const angleRad = (ballIRAngle * Math.PI) / 180;
+                const arrowLength = 50;
+                const endX = robotPixelX + arrowLength * Math.cos(angleRad);
+                const endY = robotPixelY + arrowLength * Math.sin(angleRad);
+                return (
+                  <>
+                    {/* Arrow line (fixed length, only shows angle) */}
+                    <line
+                      x1={robotPixelX}
+                      y1={robotPixelY}
+                      x2={endX}
+                      y2={endY}
+                      stroke="#f97316" // orange-500
+                      strokeWidth={2}
+                      markerEnd="url(#arrowhead)"
+                    />
+                    {/* Arrowhead marker definition */}
+                    <defs>
+                      <marker
+                        id="arrowhead"
+                        markerWidth="8"
+                        markerHeight="8"
+                        refX="6"
+                        refY="4"
+                        orient="auto"
+                        markerUnits="strokeWidth"
+                      >
+                        <polygon points="0,0 8,4 0,8" fill="#f97316" />
+                      </marker>
+                    </defs>
+                  </>
+                );
+              })()}
+            </svg>
           )}
           
           {/* Ball position (Camera) */}
-          {ballSource === 'camera' && ballPixelX !== null && ballPixelY !== null && (
+          {ballCamX !== null && ballCamY !== null && (
             <div
               className="absolute w-2.5 h-2.5 bg-orange-400 rounded-full border border-orange-600 transform -translate-x-1/2 -translate-y-1/2 z-10"
-              style={{ left: `${ballPixelX}px`, top: `${ballPixelY}px` }}
+              style={{ left: `${ballCamX}px`, top: `${ballCamY}px` }}
               title={`Ball (Camera): Distance ${camBallDistance?.toFixed(0)}mm, Angle ${camBallAngle?.toFixed(1)}°`}
             ></div>
           )}
@@ -212,14 +240,12 @@ const FieldVisualizer: React.FC<FieldVisualizerProps> = ({
                 <div className="absolute inset-0 bg-red-500 rounded-full border border-red-700" />
                 
                 {/* Robot orientation indicator (front/heading) */}
-                {robotHeading !== null && (
-                  <div
-                    className="absolute w-0.5 h-2 bg-white left-1/2 bottom-1/2 origin-bottom"
-                    style={{
-                      transform: `translateX(-50%) rotate(${robotHeading}deg)`,
-                    }}
-                  ></div>
-                )}
+                <div
+                  className="absolute w-0.5 h-2 bg-white left-1/2 bottom-1/2 origin-bottom"
+                  style={{
+                    transform: `translateX(-50%) rotate(${robotHeading}deg)`,
+                  }}
+                ></div>
               </div>
             </div>
           ) : (
