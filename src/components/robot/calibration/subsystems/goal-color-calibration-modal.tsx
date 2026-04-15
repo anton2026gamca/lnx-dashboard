@@ -104,13 +104,13 @@ export const GoalColorCalibrationModal: React.FC<GoalColorCalibrationModalProps>
           <div className="grid grid-cols-2 gap-2">
             <Button
               onClick={() => setSelectedColor('yellow')}
-              className="w-full text-xs"
+              className="w-full text-xs bg-yellow-500 hover:bg-yellow-400 dark:bg-yellow-500 dark:hover:bg-yellow-600"
             >
               Calibrate Yellow
             </Button>
             <Button
               onClick={() => setSelectedColor('blue')}
-              className="w-full text-xs"
+              className="w-full text-xs bg-blue-500 hover:bg-blue-400 dark:bg-blue-500 dark:hover:bg-blue-600"
             >
               Calibrate Blue
             </Button>

@@ -399,7 +399,7 @@ export const CameraRegionDrawer: React.FC<CameraRegionDrawerProps> = ({
   }
 
   return (
-    <div className="space-y-2">
+    <div className="">
       <div className="bg-main-200 dark:bg-main-900 border border-main-300 dark:border-main-800 p-2">
         <VideoFeedSettings
           fps={fps}
@@ -459,17 +459,14 @@ export const CameraRegionDrawer: React.FC<CameraRegionDrawerProps> = ({
       </div>
 
       {error && (
-        <div className="bg-red-100 dark:bg-red-900 border border-red-400 dark:border-red-700 text-red-900 dark:text-red-200 px-2 py-1 text-xs">
+        <div className="bg-red-100 dark:bg-red-900 border border-red-400 dark:border-red-700 text-red-900 dark:text-red-200 px-2 py-1 text-xs mt-2">
           {error}
         </div>
       )}
 
-      <div className="flex gap-1">
-      </div>
-
       {regions.length > 0 && (
         <div className="text-xs text-main-700 dark:text-main-300">
-          <div className="flex justify-between items-center mb-1">
+          <div className="flex justify-between items-center mt-2">
             <p className="font-bold">Drawn Regions: {regions.length}</p>
             <Button
               onClick={onClear}

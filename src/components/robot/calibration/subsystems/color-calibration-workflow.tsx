@@ -172,73 +172,77 @@ export const ColorCalibrationWorkflow: React.FC<ColorCalibrationWorkflowProps> =
   };
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-2">
       <h3 className="text-sm font-bold text-main-900 dark:text-white">{title}</h3>
 
       {step === 'regions' ? (
-        <div className="flex flex-col gap-2">
-          <ModeComponent hideAutonomous />
-          <SettingsComponent hideAutonomous hideTabBar />
-          <ManualMovementComponent compact />
-
-          <CameraRegionDrawer
-            onRegionAdded={handleRegionAdded}
-            onRegionChanged={handleRegionChanged}
-            onClear={handleClear}
-            regions={regions}
-          />
-
-          <div className="flex gap-1">
-            <Button
-              onClick={handleAddManualRegion}
-              className="flex-1 text-xs"
-            >
-              + Add Manual Region
-            </Button>
-            <Button
-              onClick={handleExportCSV}
-              className="flex-1 text-xs"
-              title="Export regions to CSV"
-            >
-              <Download size={14} className="mr-1" />
-              Export
-            </Button>
-            <Button
-              onClick={handleImportCSV}
-              className="flex-1 text-xs"
-              title="Import regions from CSV"
-            >
-              <Upload size={14} className="mr-1" />
-              Import
-            </Button>
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept=".csv"
-              onChange={handleFileSelect}
-              className="hidden"
+        <>
+          <div className="space-y-2">
+            <ModeComponent hideAutonomous />
+            <SettingsComponent hideAutonomous hideTabBar />
+            <ManualMovementComponent compact />
+          </div>
+          <div className="border-t border-main-300 dark:border-main-800"></div>
+          <div className="flex flex-col gap-2">
+            <CameraRegionDrawer
+              onRegionAdded={handleRegionAdded}
+              onRegionChanged={handleRegionChanged}
+              onClear={handleClear}
+              regions={regions}
             />
-          </div>
 
-          {error && (
-            <div className="bg-red-100 dark:bg-red-900 border border-red-400 dark:border-red-700 text-red-900 dark:text-red-200 px-2 py-1 text-xs">
-              {error}
+            <div className="flex gap-1">
+              <Button
+                onClick={handleAddManualRegion}
+                className="flex-1 text-xs"
+              >
+                + Add Manual Region
+              </Button>
+              <Button
+                onClick={handleExportCSV}
+                className="flex-1 text-xs"
+                title="Export regions to CSV"
+              >
+                <Download size={14} className="mr-1" />
+                Export
+              </Button>
+              <Button
+                onClick={handleImportCSV}
+                className="flex-1 text-xs"
+                title="Import regions from CSV"
+              >
+                <Upload size={14} className="mr-1" />
+                Import
+              </Button>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept=".csv"
+                onChange={handleFileSelect}
+                className="hidden"
+              />
             </div>
-          )}
 
-          <div className="flex gap-1 pt-2 border-t border-main-300 dark:border-main-800">
-            <Button
-              onClick={() => setStep('preview')}
-              disabled={regions.length === 0}
-              className="flex-1 text-xs"
-            >
-              Next: Preview
-            </Button>
-            <Button onClick={onCancel} className="flex-1 text-xs">
-              Cancel
-            </Button>
+            {error && (
+              <div className="bg-red-100 dark:bg-red-900 border border-red-400 dark:border-red-700 text-red-900 dark:text-red-200 px-2 py-1 text-xs">
+                {error}
+              </div>
+            )}
+
+            <div className="flex gap-1">
+              <Button
+                onClick={() => setStep('preview')}
+                disabled={regions.length === 0}
+                className="flex-1 text-xs"
+              >
+                Next: Preview
+              </Button>
+              <Button onClick={onCancel} className="flex-1 text-xs">
+                Cancel
+              </Button>
+            </div>
           </div>
-        </div>
+        </>
       ) : (
         <div className="space-y-2">
           <div className="bg-main-200 dark:bg-main-900 border border-main-300 dark:border-main-800 p-2 rounded">
@@ -305,7 +309,7 @@ export const ColorCalibrationWorkflow: React.FC<ColorCalibrationWorkflowProps> =
             </div>
           )}
 
-          <div className="flex gap-1 pt-2 border-t border-main-300 dark:border-main-800">
+          <div className="flex gap-1">
             <Button
               onClick={() => setStep('regions')}
               className="flex-1 text-xs"

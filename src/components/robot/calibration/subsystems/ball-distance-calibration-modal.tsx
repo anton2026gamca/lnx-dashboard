@@ -62,10 +62,24 @@ export const BallDistanceCalibrationModal: React.FC<BallDistanceCalibrationModal
         <p className="font-bold">Instructions:</p>
         <ol className="list-decimal list-inside space-y-1 mt-1">
           <li>Place the ball at a known distance from the camera</li>
-          <li>Ensure the ball is visible in the camera feed below</li>
+          <li>Ensure the ball is visible and detected in the camera feed below</li>
           <li>Enter the exact distance in millimeters</li>
           <li>Click Calibrate</li>
         </ol>
+      </div>
+
+      <div className="space-y-2">
+        <label className="block text-xs font-bold text-main-900 dark:text-white">
+          Known Distance (mm)
+        </label>
+        <input
+          type="number"
+          min="1"
+          value={knownDistance}
+          onChange={(e) => setKnownDistance(e.target.value)}
+          placeholder="200"
+          className="w-full px-1 py-0.5 bg-main-200 dark:bg-main-900 border border-main-300 dark:border-main-800 text-main-900 dark:text-white text-xs"
+        />
       </div>
 
       {frameUrl ? (
@@ -82,23 +96,6 @@ export const BallDistanceCalibrationModal: React.FC<BallDistanceCalibrationModal
         </div>
       )}
 
-      <div className="space-y-2">
-        <label className="block text-xs font-bold text-main-900 dark:text-white">
-          Known Distance (mm)
-        </label>
-        <input
-          type="number"
-          min="1"
-          value={knownDistance}
-          onChange={(e) => setKnownDistance(e.target.value)}
-          placeholder="200"
-          className="w-full px-2 py-2 bg-main-200 dark:bg-main-900 border border-main-300 dark:border-main-800 text-main-900 dark:text-white text-xs"
-        />
-        <p className="text-xs text-main-600 dark:text-main-400">
-          Enter the actual distance from the camera to the ball
-        </p>
-      </div>
-
       {error && (
         <div className="bg-red-100 dark:bg-red-900 border border-red-400 dark:border-red-700 text-red-900 dark:text-red-200 px-2 py-1 text-xs">
           {error}
@@ -111,19 +108,13 @@ export const BallDistanceCalibrationModal: React.FC<BallDistanceCalibrationModal
         </div>
       )}
 
-      <div className="flex gap-1 pt-2 border-t border-main-300 dark:border-main-800">
+      <div className="flex gap-1">
         <Button
           onClick={handleCalibrate}
           disabled={loading}
           className="flex-1 text-xs"
         >
           {loading ? 'Calibrating...' : 'Calibrate'}
-        </Button>
-        <Button
-          onClick={onClose}
-          className="flex-1 text-xs"
-        >
-          Close
         </Button>
       </div>
     </div>
