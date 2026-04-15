@@ -46,7 +46,7 @@ const FieldVisualizer: React.FC<FieldVisualizerProps> = ({
     const updateScale = () => {
       if (containerRef.current) {
         const maxWidth = containerRef.current.clientWidth - 4;
-        const maxHeight = containerRef.current.clientHeight - 40;
+        const maxHeight = containerRef.current.clientHeight - 4;
         const scaleWidth = maxWidth / FIELD_WIDTH;
         const scaleHeight = maxHeight / FIELD_HEIGHT;
         setScale(Math.min(scaleWidth, scaleHeight));
