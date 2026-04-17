@@ -31,10 +31,11 @@ A dashboard for managing [robocup soccer robots](https://github.com/anton2026gam
 
 ## Quick Start
 
-### Installation
+### Setup
 
 ```bash
-cd /media/anton/Data/Projects/lnx-dashboard
+git clone https://github.com/anton2026gamca/lnx-dashboard
+cd lnx-dashboard
 npm install
 ```
 
@@ -62,7 +63,7 @@ npx tauri build
 
 ## Technology Stack
 
-- **Next.js** 16.2.1
+- **Next.js** 16.2.4
 - **React** 19.2.4
 - **TypeScript** 5.x
 - **Tailwind CSS** 4.x
