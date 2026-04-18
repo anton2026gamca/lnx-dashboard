@@ -391,7 +391,7 @@ export class RobotAPIClient {
    * @param focalLength - Focal length value
    */
   async setGoalFocalLength(focalLength: number): Promise<void> {
-    await this._emit('set_goal_focal_length', { focal_length: focalLength });
+    await this._emit('set_goal_focal_length', { focal_length_pixels: focalLength });
   }
 
   /**
