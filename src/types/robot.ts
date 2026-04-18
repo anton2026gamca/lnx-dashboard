@@ -2,6 +2,14 @@
  * Robot connection types and interfaces
  */
 
+export type RobotColor = 'red' | 'blue' | 'green' | 'yellow' | 'purple' | 'pink' | 'cyan' | 'orange';
+
+export interface HSVColor {
+  h: number; // 0-360
+  s: number; // 0-100
+  v: number; // 0-100
+}
+
 export interface RobotConnection {
   id: string;
   name: string;
@@ -10,6 +18,7 @@ export interface RobotConnection {
   createdAt: number;
   lastConnected?: number;
   token?: string;
+  color?: RobotColor | HSVColor;
 }
 
 export interface RobotConnectionState {
@@ -17,6 +26,8 @@ export interface RobotConnectionState {
   isConnecting: boolean;
   error: string | null;
   connectedRobot: RobotConnection | null;
+  connectedRobots: RobotConnection[];
+  activeRobotId: string | null;
 }
 
 export type RobotMode = 'idle' | 'manual' | 'autonomous';

@@ -10,21 +10,25 @@ import { useRobot } from '@/context/RobotContext';
 import { LogPanel } from '@/components/robot/dashboard/log-panel';
 import { ControlPanel } from '@/components/robot/dashboard/control-panel';
 import { CameraPanel } from './camera-panel';
+import { RobotHeader } from './robot-header';
 import { cn } from '@/lib/utils';
 import { SensorPanel } from './sensor-panel';
-import { ThemeToggle } from '@/components/ui/theme-toggle';
 
 // ============= Sub-components =============
 
 const PanelContainer: React.FC<{ className: string; children: React.ReactNode }> = ({ className, children }) => (
-  <div className={cn("w-full bg-main-200 dark:bg-main-950 border-solid border-2 border-main-300 dark:border-main-900 overflow-y-auto", className)}>
+  <div className={cn("w-full bg-main-200 dark:bg-main-950 border border-main-300 dark:border-main-900 overflow-y-auto", className)}>
     {children}
   </div>
 );
 
 // ============= Main Dashboard =============
 
-export const RobotDashboard: React.FC = () => {
+interface RobotDashboardProps {
+  onAddRobot?: () => void;
+}
+
+export const RobotDashboard: React.FC<RobotDashboardProps> = ({ onAddRobot }) => {
   const { connectionState, disconnectFromRobot } = useRobot();
 
   if (!connectionState.isConnected) {
@@ -38,30 +42,14 @@ export const RobotDashboard: React.FC = () => {
   const robot = connectionState.connectedRobot;
   if (!robot) return null;
 
-
   return (
-    <div className="h-screen bg-main-100 dark:bg-black flex flex-col max-h-screen p-1 pt-0">
-      {/* Header */}
-      <div className="flex-none bg-main-100 dark:bg-main-950">
-        <div className="flex items-center justify-between gap-6">
-          <div className="flex items-center justify-center gap-4">
-            <h1 className="text-md font-bold text-main-900 dark:text-white">
-              {robot.name}
-            </h1>
-            <p className="text-xs text-main-600 dark:text-main-400">
-              {robot.ip}:{robot.port}
-            </p>
-          </div>
-          <div className="grid grid-cols-2 gap-1">
-            <Button onClick={disconnectFromRobot} className="border-2 border-red-600 bg-transparent hover:bg-red-600 text-black dark:bg-transparent dark:border-red-500 dark:text-white dark:hover:bg-red-700">Disconnect</Button>
-            <ThemeToggle />
-          </div>
-        </div>
-      </div>
+    <div className="h-screen bg-main-100 dark:bg-black flex flex-col max-h-screen">
+      {/* Header with tabs */}
+      <RobotHeader onAddRobot={onAddRobot} />
 
-      <div className="flex-1 grid grid-cols-10 grid-rows-1 gap-2 overflow-y-auto">
+      <div className="flex-1 grid grid-cols-10 grid-rows-1 gap-1 overflow-y-auto m-1">
         {/* Left */}
-        <div className="col-span-6 h-full flex flex-col items-center justify-center gap-2">
+        <div className="col-span-6 h-full flex flex-col items-center justify-center gap-1">
           {/* Video Controls & Stream */}
           <PanelContainer className="flex-none">
             <CameraPanel />
@@ -74,7 +62,7 @@ export const RobotDashboard: React.FC = () => {
         </div>
         
         {/* Right */}
-        <div className="col-span-4 h-full flex flex-col items-center justify-center gap-2 overflow-y-auto">
+        <div className="col-span-4 h-full flex flex-col items-center justify-center gap-1 overflow-y-auto">
           {/* Sensors */}
           <PanelContainer className="flex-none">
             <SensorPanel />
@@ -89,4 +77,3 @@ export const RobotDashboard: React.FC = () => {
     </div>
   );
 };
-

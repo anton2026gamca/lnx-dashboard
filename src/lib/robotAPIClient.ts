@@ -10,6 +10,7 @@ export class RobotAPIClient {
   private robot: RobotConnection | null = null;
   private maxReconnectAttempts = 5;
   private reconnectDelay = 2000;
+  private robotConnections: Map<string, { socket: Socket; robot: RobotConnection }> = new Map();
 
   /**
    * Connect to a robot
@@ -33,24 +34,40 @@ export class RobotAPIClient {
 
         console.log(`Connecting to robot at ${url} with options:`, opts);
         
-        this.socket = io(url, opts);
+        const socket = io(url, opts);
 
-        this.robot = robot;
-
-        this.socket.on('connect', () => {
+        socket.on('connect', () => {
+          // Store the connection
+          this.robotConnections.set(robot.id, { socket, robot });
+          // Keep the old socket/robot for backward compatibility with methods that don't specify a robot
+          this.socket = socket;
+          this.robot = robot;
           resolve();
         });
 
-        this.socket.on('connect_error', (error) => {
+        socket.on('connect_error', (error) => {
           reject(new Error(`Connection error: ${error.message}`));
         });
 
-        this.socket.on('error', (error) => {
+        socket.on('error', (error) => {
           console.error('Socket error:', error);
         });
 
-        this.socket.on('disconnect', (reason) => {
+        socket.on('disconnect', (reason) => {
           console.log('Disconnected from robot:', reason);
+          // Remove from connections when disconnected
+          this.robotConnections.delete(robot.id);
+          if (this.robot?.id === robot.id) {
+            const remaining = Array.from(this.robotConnections.values());
+            if (remaining.length > 0) {
+              const next = remaining[0];
+              this.socket = next.socket;
+              this.robot = next.robot;
+            } else {
+              this.socket = null;
+              this.robot = null;
+            }
+          }
         });
       } catch (error) {
         reject(error);
@@ -59,21 +76,64 @@ export class RobotAPIClient {
   }
 
   /**
-   * Disconnect from the robot
+   * Disconnect from a specific robot or all robots
    */
-  disconnect(): void {
-    if (this.socket) {
-      this.socket.disconnect();
+  disconnect(robotId?: string): void {
+    if (robotId) {
+      const connection = this.robotConnections.get(robotId);
+      if (connection) {
+        connection.socket.disconnect();
+        this.robotConnections.delete(robotId);
+        // If we're disconnecting the current active robot, switch to another one or clear
+        if (this.robot?.id === robotId) {
+          const remaining = Array.from(this.robotConnections.values());
+          if (remaining.length > 0) {
+            const next = remaining[0];
+            this.socket = next.socket;
+            this.robot = next.robot;
+          } else {
+            this.socket = null;
+            this.robot = null;
+          }
+        }
+      }
+    } else {
+      // Disconnect all robots
+      this.robotConnections.forEach((connection) => {
+        connection.socket.disconnect();
+      });
+      this.robotConnections.clear();
       this.socket = null;
       this.robot = null;
     }
   }
 
   /**
-   * Check if connected
+   * Set the active robot for operations
+   */
+  setActiveRobot(robotId: string): boolean {
+    const connection = this.robotConnections.get(robotId);
+    if (connection) {
+      this.socket = connection.socket;
+      this.robot = connection.robot;
+      return true;
+    }
+    return false;
+  }
+
+  /**
+   * Check if connected to any robot
    */
   isConnected(): boolean {
     return this.socket?.connected ?? false;
+  }
+
+  /**
+   * Check if connected to a specific robot
+   */
+  isConnectedToRobot(robotId: string): boolean {
+    const connection = this.robotConnections.get(robotId);
+    return connection?.socket.connected ?? false;
   }
 
   /**
@@ -81,6 +141,13 @@ export class RobotAPIClient {
    */
   getRobot(): RobotConnection | null {
     return this.robot;
+  }
+
+  /**
+   * Get a specific robot's connection info
+   */
+  getRobotConnection(robotId: string): RobotConnection | null {
+    return this.robotConnections.get(robotId)?.robot ?? null;
   }
 
   // ============ Query Methods ============

@@ -8,6 +8,7 @@ import React, { createContext, useContext, useState, useCallback, useEffect } fr
 import { RobotConnection, RobotConnectionState } from '@/types/robot';
 import { robotStorage } from '@/lib/robotStorage';
 import { robotClient } from '@/lib/robotAPIClient';
+import { getColorForRobot } from '@/lib/robotColors';
 
 interface RobotContextType {
   // Connection state
@@ -16,11 +17,12 @@ interface RobotContextType {
   
   // Actions
   connectToRobot: (robot: RobotConnection) => Promise<void>;
-  disconnectFromRobot: () => void;
+  disconnectFromRobot: (robotId?: string) => void;
+  switchActiveRobot: (robotId: string) => void;
   saveRobot: (robot: RobotConnection) => void;
   deleteSavedRobot: (id: string) => void;
   loadSavedRobots: () => void;
-  createNewRobotConnection: (name: string, ip: string, port: number, token?: string) => RobotConnection;
+  createNewRobotConnection: (name: string, ip: string, port: number, token?: string, color?: string) => RobotConnection;
 }
 
 const RobotContext = createContext<RobotContextType | undefined>(undefined);
@@ -31,6 +33,8 @@ export const RobotProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     isConnecting: false,
     error: null,
     connectedRobot: null,
+    connectedRobots: [],
+    activeRobotId: null,
   });
 
   const [savedRobots, setSavedRobots] = useState<RobotConnection[]>([]);
@@ -57,11 +61,20 @@ export const RobotProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       
       robotStorage.updateLastConnected(robot.id);
       
-      setConnectionState({
-        isConnected: true,
-        isConnecting: false,
-        error: null,
-        connectedRobot: robot,
+      // Add new robot to the list of connected robots without disconnecting existing ones
+      setConnectionState(prev => {
+        // Check if robot is already connected
+        const alreadyConnected = prev.connectedRobots.some(r => r.id === robot.id);
+        const updatedRobots = alreadyConnected ? prev.connectedRobots : [...prev.connectedRobots, robot];
+        
+        return {
+          isConnected: true,
+          isConnecting: false,
+          error: null,
+          connectedRobot: robot,
+          connectedRobots: updatedRobots,
+          activeRobotId: robot.id,
+        };
       });
 
       loadSavedRobots();
@@ -71,20 +84,47 @@ export const RobotProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         ...prev,
         isConnecting: false,
         error: errorMessage,
-        isConnected: false,
-        connectedRobot: null,
       }));
       throw error;
     }
   }, [loadSavedRobots]);
 
-  const disconnectFromRobot = useCallback(() => {
-    robotClient.disconnect();
-    setConnectionState({
-      isConnected: false,
-      isConnecting: false,
-      error: null,
-      connectedRobot: null,
+  const disconnectFromRobot = useCallback((robotId?: string) => {
+    robotClient.disconnect(robotId);
+    setConnectionState(prev => {
+      if (robotId) {
+        const updatedRobots = prev.connectedRobots.filter(r => r.id !== robotId);
+        const newActiveId = updatedRobots.length > 0 ? updatedRobots[0].id : null;
+        return {
+          isConnected: updatedRobots.length > 0,
+          isConnecting: false,
+          error: null,
+          connectedRobot: updatedRobots.length > 0 ? updatedRobots[0] : null,
+          connectedRobots: updatedRobots,
+          activeRobotId: newActiveId,
+        };
+      }
+      return {
+        isConnected: false,
+        isConnecting: false,
+        error: null,
+        connectedRobot: null,
+        connectedRobots: [],
+        activeRobotId: null,
+      };
+    });
+  }, []);
+
+  const switchActiveRobot = useCallback((robotId: string) => {
+    robotClient.setActiveRobot(robotId);
+    setConnectionState(prev => {
+      const robot = prev.connectedRobots.find(r => r.id === robotId);
+      if (!robot) return prev;
+      return {
+        ...prev,
+        connectedRobot: robot,
+        activeRobotId: robotId,
+      };
     });
   }, []);
 
@@ -99,13 +139,16 @@ export const RobotProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   }, [loadSavedRobots]);
 
   const createNewRobotConnection = useCallback(
-    (name: string, ip: string, port: number, token?: string): RobotConnection => {
+    (name: string, ip: string, port: number, token?: string, color?: string): RobotConnection => {
+      const id = robotStorage.generateId();
+      const finalColor = color || getColorForRobot(id);
       return {
-        id: robotStorage.generateId(),
+        id,
         name,
         ip,
         port,
         createdAt: Date.now(),
+        color: finalColor as any,
         ...(token && { token }),
       };
     },
@@ -117,6 +160,7 @@ export const RobotProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     savedRobots,
     connectToRobot,
     disconnectFromRobot,
+    switchActiveRobot,
     saveRobot,
     deleteSavedRobot,
     loadSavedRobots,

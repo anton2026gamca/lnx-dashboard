@@ -17,6 +17,7 @@ export const useSensorData = (interval: number = 200) => {
   const [sensorData, setSensorData] = useState<SensorData | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [lastActiveRobotId, setLastActiveRobotId] = useState<string | null>(null);
 
   const fetchData = async () => {
     try {
@@ -32,10 +33,18 @@ export const useSensorData = (interval: number = 200) => {
   };
 
   useEffect(() => {
+    // If robot changed, reset data
+    if (connectionState.activeRobotId && lastActiveRobotId !== connectionState.activeRobotId) {
+      setSensorData(null);
+      setLastActiveRobotId(connectionState.activeRobotId);
+      return;
+    }
+
     if (!connectionState.isConnected) {
       if (sensorData !== null) {
         setSensorData(null);
       }
+      setLastActiveRobotId(null);
       return;
     }
 
@@ -43,7 +52,7 @@ export const useSensorData = (interval: number = 200) => {
 
     const timer = setInterval(fetchData, interval);
     return () => clearInterval(timer);
-  }, [connectionState.isConnected, interval]);
+  }, [connectionState.isConnected, connectionState.activeRobotId, lastActiveRobotId, interval]);
 
   return { sensorData, loading, error };
 };
@@ -53,6 +62,7 @@ export const useGoalDetection = (interval: number = 200) => {
   const [goalDetection, setGoalDetection] = useState<GoalDetectionData | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [lastActiveRobotId, setLastActiveRobotId] = useState<string | null>(null);
 
   const fetchData = async () => {
     try {
@@ -68,10 +78,18 @@ export const useGoalDetection = (interval: number = 200) => {
   }
 
   useEffect(() => {
+    // If robot changed, reset data
+    if (connectionState.activeRobotId && lastActiveRobotId !== connectionState.activeRobotId) {
+      setGoalDetection(null);
+      setLastActiveRobotId(connectionState.activeRobotId);
+      return;
+    }
+
     if (!connectionState.isConnected) {
       if (goalDetection !== null) {
         setGoalDetection(null);
       }
+      setLastActiveRobotId(null);
       return;
     }
     
@@ -79,7 +97,7 @@ export const useGoalDetection = (interval: number = 200) => {
 
     const timer = setInterval(fetchData, interval);
     return () => clearInterval(timer);
-  }, [connectionState.isConnected, interval]);
+  }, [connectionState.isConnected, connectionState.activeRobotId, lastActiveRobotId, interval]);
   
   return { goalDetection, loading, error, fetchData };
 };
@@ -89,6 +107,7 @@ export const usePositionEstimate = (interval: number = 100) => {
   const [position, setPosition] = useState<PositionEstimate | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [lastActiveRobotId, setLastActiveRobotId] = useState<string | null>(null);
 
   const fetchPosition = async () => {
     try {
@@ -104,8 +123,16 @@ export const usePositionEstimate = (interval: number = 100) => {
   }
 
   useEffect(() => {
+    // If robot changed, reset data
+    if (connectionState.activeRobotId && lastActiveRobotId !== connectionState.activeRobotId) {
+      setPosition(null);
+      setLastActiveRobotId(connectionState.activeRobotId);
+      return;
+    }
+
     if (!connectionState.isConnected) {
       setPosition(null);
+      setLastActiveRobotId(null);
       return;
     }
     
@@ -113,7 +140,7 @@ export const usePositionEstimate = (interval: number = 100) => {
     
     const timer = setInterval(fetchPosition, interval);
     return () => clearInterval(timer);
-  }, [connectionState.isConnected, interval]);
+  }, [connectionState.isConnected, connectionState.activeRobotId, lastActiveRobotId, interval]);
   
   return { position, loading, error };
 };
@@ -165,7 +192,7 @@ export const useRobotMode = () => {
 
     const unsubscribe = robotClient.subscribeModeChange((mode: RobotMode) => setMode(mode));
     return () => unsubscribe();
-  }, [connectionState.isConnected, fetchMode]);
+  }, [connectionState.isConnected, connectionState.activeRobotId, fetchMode]);
 
   return { mode, loading, error, changeMode, fetchMode };
 };
@@ -201,7 +228,7 @@ export const useTargetGoal = () => {
     const unsubscribe = robotClient.subscribeGoalColorChange((goal: 'yellow' | 'blue') => setTargetGoal(goal));
     
     return () => unsubscribe();
-  }, [connectionState.isConnected, fetchTargetGoal]);
+  }, [connectionState.isConnected, connectionState.activeRobotId, fetchTargetGoal]);
   
   return { targetGoal, refresh: fetchTargetGoal };
 };
@@ -213,6 +240,7 @@ export const useVideoStream = (enabled: boolean, fps: number = 30, showDetection
   const { connectionState } = useRobot();
   const [frame, setFrame] = useState<Uint8Array | null>(null);
   const [isStreaming, setIsStreaming] = useState(false);
+  const [lastActiveRobotId, setLastActiveRobotId] = useState<string | null>(null);
 
   const [refreshKey, setRefreshKey] = useState(0);
 
@@ -221,8 +249,17 @@ export const useVideoStream = (enabled: boolean, fps: number = 30, showDetection
   }, []);
 
   useEffect(() => {
+    // If robot changed, reset frame
+    if (connectionState.activeRobotId && lastActiveRobotId !== connectionState.activeRobotId) {
+      setFrame(null);
+      setLastActiveRobotId(connectionState.activeRobotId);
+      return;
+    }
+
     if (!connectionState.isConnected) {
       setIsStreaming(false);
+      setFrame(null);
+      setLastActiveRobotId(null);
       return;
     }
 
@@ -248,7 +285,7 @@ export const useVideoStream = (enabled: boolean, fps: number = 30, showDetection
       console.error('Failed to subscribe to video:', err);
       setIsStreaming(false);
     }
-  }, [connectionState.isConnected, enabled, fps, showDetections, refreshKey, handleFrame]);
+  }, [connectionState.isConnected, connectionState.activeRobotId, lastActiveRobotId, enabled, fps, showDetections, refreshKey, handleFrame]);
 
   const refresh = () => {
     setRefreshKey((prev) => prev + 1);
@@ -312,7 +349,7 @@ export const useManualControl = () => {
   */
 export const useLogs = () => {
   const { connectionState } = useRobot();
-  const [logs, setLogs] = useState<LogEntry[]>([]);
+  const [logsByRobotId, setLogsByRobotId] = useState<Record<string, LogEntry[]>>({});
     
   const fetchLogs = async () => {
     try {
@@ -328,21 +365,37 @@ export const useLogs = () => {
   }
 
   useEffect(() => {
-    if (!connectionState.isConnected) {
-      setLogs([]);
+    if (!connectionState.isConnected || !connectionState.activeRobotId) {
       return;
     }
     
     const unsubscribe = robotClient.subscribeNewLogs((data: LogsBatch) => {
-      setLogs(prev => [...prev, ...(data.logs || [])]);
+      setLogsByRobotId(prev => {
+        const robotId = connectionState.activeRobotId!;
+        const currentLogs = prev[robotId] || [];
+        return {
+          ...prev,
+          [robotId]: [...currentLogs, ...(data.logs || [])]
+        };
+      });
     });
     
     return () => {
       unsubscribe();
-      setLogs([]);
     }
-  }
-  , [connectionState.isConnected]);
+  }, [connectionState.isConnected, connectionState.activeRobotId]);
+
+  // Get logs for the current active robot
+  const logs = connectionState.activeRobotId ? logsByRobotId[connectionState.activeRobotId] || [] : [];
+
+  const setLogs = (newLogs: LogEntry[]) => {
+    if (connectionState.activeRobotId) {
+      setLogsByRobotId(prev => ({
+        ...prev,
+        [connectionState.activeRobotId!]: newLogs
+      }));
+    }
+  };
 
   return { logs, setLogs, fetchLogs };
 }
@@ -351,16 +404,22 @@ export const useLogs = () => {
   * Hook to manage motor settings
   */
 export const useMotorSettings = (interval = 1000) => {
+  const { connectionState } = useRobot();
   const [settings, setSettings] = useState<MotorSettings>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    if (!connectionState.isConnected) {
+      setSettings({});
+      return;
+    }
+
     fetchSettings();
 
     const timer = setInterval(fetchSettings, interval);
     return () => clearInterval(timer);
-  }, [interval]);
+  }, [connectionState.isConnected, connectionState.activeRobotId, interval]);
 
   const fetchSettings = async () => {
     try {
@@ -394,14 +453,21 @@ export const useMotorSettings = (interval = 1000) => {
   * Hook to manage autonomous settings
   */
 export const useAutonomousSettings = () => {
+  const { connectionState } = useRobot();
   const [settings, setSettings] = useState<AutonomousSettings>({});
   const [stateMachines, setStateMachines] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    if (!connectionState.isConnected) {
+      setSettings({});
+      setStateMachines([]);
+      return;
+    }
+
     fetchSettings();
-  }, []);
+  }, [connectionState.isConnected, connectionState.activeRobotId]);
 
   const fetchSettings = async () => {
     try {
