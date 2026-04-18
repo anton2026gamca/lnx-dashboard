@@ -5,7 +5,9 @@ import { SensorCard, SensorProperty, AngleIndicator } from './sensor-card';
 
 
 const MotorVisualizer: React.FC<{ speeds: number[] }> = ({ speeds }) => {
-  if (speeds.length != 4) return null;
+  if (speeds.length != 4) {
+    speeds = [0, 0, 0, 0];
+  }
 
   const MOTOR_LOCATIONS = [135, 225, 315, 45]; // degrees
   const locationsRad = MOTOR_LOCATIONS.map((a) => (a * Math.PI) / 180);

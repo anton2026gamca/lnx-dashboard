@@ -76,10 +76,13 @@ export const ManualMovementComponent: React.FC<{compact?: boolean}> = ({compact 
 
   if (mode !== 'manual') {
     return (
-      <div className="bg-main-100 dark:bg-main-950 border-2 border-main-300 dark:border-main-800 p-2 flex-1 flex items-center justify-center text-center">
-        <div className="text-xs text-main-600 dark:text-main-500">
+      <div className="bg-main-100 dark:bg-main-950 border-2 border-main-300 dark:border-main-800 p-2 flex-1 flex items-center justify-center text-center text-xs flex flex-col gap-1">
+        <div className="text-main-600 dark:text-main-500">
           Switch to <span className="font-bold text-yellow-600 dark:text-yellow-400">Manual Mode</span> to use keyboard controls
         </div>
+        {mode !== 'idle' && (
+          <div className="text-green-700 dark:text-green-300"><span className="text-yellow-600 dark:text-yellow-400 font-bold">SPACE</span>: Emergency Stop (Idle)</div>
+        )}
       </div>
     );
   }
@@ -87,13 +90,10 @@ export const ManualMovementComponent: React.FC<{compact?: boolean}> = ({compact 
   return (
     <div className="bg-main-100 dark:bg-main-950 border-2 border-green-500 dark:border-green-700 p-2 flex flex-col items-center justify-center h-full">
       <div className="text-xs font-bold text-green-800 dark:text-green-200 uppercase">Manual Control Active</div>
-      {!compact && <div className="text-xs text-green-700 dark:text-green-300 space-y-1 font-mono mt-2">
-        <div>W/S - Forward/Backward</div>
-        <div>A/D - Strafe Left/Right</div>
-        <div>← / → - Rotate</div>
-        <div className="mt-2 pt-2 border-t border-green-600 dark:border-green-700">
-          <span className="text-yellow-600 dark:text-yellow-400 font-bold">SPACE</span> - Emergency Stop (Idle)
-        </div>
+      {!compact && <div className="text-xs text-green-700 dark:text-green-300 space-y-1 font-mono mt-2 flex gap-5">
+        <span><span className="text-yellow-600 dark:text-yellow-400 font-bold">WASD</span>: Movement</span>
+        <span><span className="text-yellow-600 dark:text-yellow-400 font-bold">← / →</span>: Rotate</span>
+        <span><span className="text-yellow-600 dark:text-yellow-400 font-bold">SPACE</span>: Emergency Stop (Idle)</span>
       </div>}
     </div>
   );
