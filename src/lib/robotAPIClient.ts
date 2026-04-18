@@ -11,6 +11,7 @@ export class RobotAPIClient {
   private maxReconnectAttempts = 5;
   private reconnectDelay = 2000;
   private robotConnections: Map<string, { socket: Socket; robot: RobotConnection }> = new Map();
+  private subscriptionHandlers: Map<string, Map<string, Function>> = new Map();
 
   /**
    * Connect to a robot
@@ -37,9 +38,7 @@ export class RobotAPIClient {
         const socket = io(url, opts);
 
         socket.on('connect', () => {
-          // Store the connection
           this.robotConnections.set(robot.id, { socket, robot });
-          // Keep the old socket/robot for backward compatibility with methods that don't specify a robot
           this.socket = socket;
           this.robot = robot;
           resolve();
@@ -55,7 +54,6 @@ export class RobotAPIClient {
 
         socket.on('disconnect', (reason) => {
           console.log('Disconnected from robot:', reason);
-          // Remove from connections when disconnected
           this.robotConnections.delete(robot.id);
           if (this.robot?.id === robot.id) {
             const remaining = Array.from(this.robotConnections.values());
@@ -82,9 +80,9 @@ export class RobotAPIClient {
     if (robotId) {
       const connection = this.robotConnections.get(robotId);
       if (connection) {
+        this.subscriptionHandlers.delete(robotId);
         connection.socket.disconnect();
         this.robotConnections.delete(robotId);
-        // If we're disconnecting the current active robot, switch to another one or clear
         if (this.robot?.id === robotId) {
           const remaining = Array.from(this.robotConnections.values());
           if (remaining.length > 0) {
@@ -98,11 +96,12 @@ export class RobotAPIClient {
         }
       }
     } else {
-      // Disconnect all robots
       this.robotConnections.forEach((connection) => {
+        this.subscriptionHandlers.delete(connection.robot.id);
         connection.socket.disconnect();
       });
       this.robotConnections.clear();
+      this.subscriptionHandlers.clear();
       this.socket = null;
       this.robot = null;
     }
@@ -517,22 +516,34 @@ export class RobotAPIClient {
    * @returns Unsubscribe function.
    */
   private subscribeUpdate<T>(eventName: string, subscribeKey: string, callback: (data: T) => void): () => void {
-    if (!this.socket) {
+    if (!this.socket || !this.robot) {
       throw new Error('Not connected to robot');
     }
+
+    const robotId = this.robot.id;
+    const socket = this.socket;
 
     const handler = (data: any) => {
       // console.log(`Received update for ${eventName}:`, data);
       callback(data as T);
     };
 
-    this.socket.on(eventName, handler);
-    this.socket.emit('subscribe_updates', { updates: { [subscribeKey]: true } });
+    if (!this.subscriptionHandlers.has(robotId)) {
+      this.subscriptionHandlers.set(robotId, new Map());
+    }
+    const robotHandlers = this.subscriptionHandlers.get(robotId)!;
+    robotHandlers.set(eventName, handler);
 
-    // Return unsubscribe function
+    socket.on(eventName, handler);
+    socket.emit('subscribe_updates', { updates: { [subscribeKey]: true } });
+
     return () => {
-      this.socket?.off(eventName, handler);
-      this.socket?.emit('subscribe_updates', { updates: { [subscribeKey]: false } });
+      socket.off(eventName, handler);
+      socket.emit('subscribe_updates', { updates: { [subscribeKey]: false } });
+      const handlers = this.subscriptionHandlers.get(robotId);
+      if (handlers) {
+        handlers.delete(eventName);
+      }
     };
   }
 
@@ -594,21 +605,33 @@ export class RobotAPIClient {
     fps: number = 30,
     showDetections: boolean = true,
   ): () => void {
-    if (!this.socket) {
+    if (!this.socket || !this.robot) {
       throw new Error('Not connected to robot');
     }
+
+    const robotId = this.robot.id;
+    const socket = this.socket;
 
     const handleFrame = (frame: Buffer | Uint8Array) => {
       onFrame(new Uint8Array(frame));
     };
 
-    this.socket.on('video_frame', handleFrame);
-    this.socket.emit('subscribe_video', { fps, show_detections: showDetections });
+    if (!this.subscriptionHandlers.has(robotId)) {
+      this.subscriptionHandlers.set(robotId, new Map());
+    }
+    const robotHandlers = this.subscriptionHandlers.get(robotId)!;
+    robotHandlers.set('video_frame', handleFrame);
 
-    // Return unsubscribe function
+    socket.on('video_frame', handleFrame);
+    socket.emit('subscribe_video', { fps, show_detections: showDetections });
+
     return () => {
-      this.socket?.off('video_frame', handleFrame);
-      this.socket?.emit('unsubscribe_video', {});
+      socket.off('video_frame', handleFrame);
+      socket.emit('unsubscribe_video', {});
+      const handlers = this.subscriptionHandlers.get(robotId);
+      if (handlers) {
+        handlers.delete('video_frame');
+      }
     };
   }
 

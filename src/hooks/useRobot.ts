@@ -33,7 +33,6 @@ export const useSensorData = (interval: number = 200) => {
   };
 
   useEffect(() => {
-    // If robot changed, reset data
     if (connectionState.activeRobotId && lastActiveRobotId !== connectionState.activeRobotId) {
       setSensorData(null);
       setLastActiveRobotId(connectionState.activeRobotId);
@@ -78,7 +77,6 @@ export const useGoalDetection = (interval: number = 200) => {
   }
 
   useEffect(() => {
-    // If robot changed, reset data
     if (connectionState.activeRobotId && lastActiveRobotId !== connectionState.activeRobotId) {
       setGoalDetection(null);
       setLastActiveRobotId(connectionState.activeRobotId);
@@ -123,7 +121,6 @@ export const usePositionEstimate = (interval: number = 100) => {
   }
 
   useEffect(() => {
-    // If robot changed, reset data
     if (connectionState.activeRobotId && lastActiveRobotId !== connectionState.activeRobotId) {
       setPosition(null);
       setLastActiveRobotId(connectionState.activeRobotId);
@@ -165,7 +162,7 @@ export const useRobotMode = () => {
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to fetch mode');
     }
-  }, [connectionState.isConnected]);
+  }, []);
 
   const changeMode = useCallback(
     async (newMode: RobotMode) => {
@@ -241,15 +238,9 @@ export const useVideoStream = (enabled: boolean, fps: number = 30, showDetection
   const [frame, setFrame] = useState<Uint8Array | null>(null);
   const [isStreaming, setIsStreaming] = useState(false);
   const [lastActiveRobotId, setLastActiveRobotId] = useState<string | null>(null);
-
   const [refreshKey, setRefreshKey] = useState(0);
 
-  const handleFrame = useCallback((frameData: Uint8Array) => {
-    setFrame(frameData);
-  }, [connectionState.isConnected, connectionState.activeRobotId]);
-
   useEffect(() => {
-    // If robot changed, reset frame
     if (connectionState.activeRobotId && lastActiveRobotId !== connectionState.activeRobotId) {
       setFrame(null);
       setLastActiveRobotId(connectionState.activeRobotId);
@@ -270,7 +261,9 @@ export const useVideoStream = (enabled: boolean, fps: number = 30, showDetection
       }
 
       const unsubscribe = robotClient.subscribeVideo(
-        handleFrame,
+        (frameData: Uint8Array) => {
+          setFrame(frameData);
+        },
         fps,
         showDetections,
       );
@@ -285,7 +278,7 @@ export const useVideoStream = (enabled: boolean, fps: number = 30, showDetection
       console.error('Failed to subscribe to video:', err);
       setIsStreaming(false);
     }
-  }, [connectionState.isConnected, connectionState.activeRobotId, lastActiveRobotId, enabled, fps, showDetections, refreshKey, handleFrame]);
+  }, [connectionState.isConnected, connectionState.activeRobotId, lastActiveRobotId, enabled, fps, showDetections, refreshKey]);
 
   const refresh = () => {
     setRefreshKey((prev) => prev + 1);
@@ -389,7 +382,6 @@ export const useLogs = () => {
     }
   }, [connectionState.isConnected, connectionState.activeRobotId]);
 
-  // Get logs for the current active robot
   const logs = connectionState.activeRobotId ? logsByRobotId[connectionState.activeRobotId] || [] : [];
 
   const setLogs = (newLogs: LogEntry[]) => {
