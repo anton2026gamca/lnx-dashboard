@@ -246,7 +246,7 @@ export const useVideoStream = (enabled: boolean, fps: number = 30, showDetection
 
   const handleFrame = useCallback((frameData: Uint8Array) => {
     setFrame(frameData);
-  }, []);
+  }, [connectionState.isConnected, connectionState.activeRobotId]);
 
   useEffect(() => {
     // If robot changed, reset frame
@@ -307,10 +307,14 @@ export const useFrameDataUrl = (frame: Uint8Array | null) => {
       return;
     }
 
-    const binary = String.fromCharCode.apply(null, Array.from(frame));
-    const base64 = btoa(binary);
-    const persistentUrl = `data:image/jpeg;base64,${base64}`;
-    setDataUrl((prev) => prev != persistentUrl ? persistentUrl : prev);
+    try {
+      const binary = String.fromCharCode.apply(null, Array.from(frame));
+      const base64 = btoa(binary);
+      const persistentUrl = `data:image/jpeg;base64,${base64}`;
+      setDataUrl(persistentUrl);
+    } catch (err) {
+      console.error('Failed to convert frame to data URL:', err);
+    }
   }, [frame]);
 
   return dataUrl;
