@@ -120,6 +120,14 @@ export const GoalDistanceCalibrationModal: React.FC<GoalDistanceCalibrationModal
         Goal Distance Calibration
       </h3>
 
+      <div className="border-t border-main-300 dark:border-main-800"></div>
+
+      <div className="space-y-2">
+        <ModeComponent />
+        <SettingsComponent hideAutonomous hideTabBar />
+        <ManualMovementComponent compact />
+      </div>
+
       {!calibrationStarted && (
         <div className="space-y-3">
           <div className="border-t border-main-300 dark:border-main-800"></div>
@@ -149,14 +157,6 @@ export const GoalDistanceCalibrationModal: React.FC<GoalDistanceCalibrationModal
             {focalLengthSuccess && (
               <p className="text-xs text-green-600 dark:text-green-400">{focalLengthSuccess}</p>
             )}
-          </div>
-
-          <div className="border-t border-main-300 dark:border-main-800"></div>
-
-          <div className="space-y-2">
-            <ModeComponent />
-            <SettingsComponent hideAutonomous hideTabBar />
-            <ManualMovementComponent compact />
           </div>
 
           <div className="border-t border-main-300 dark:border-main-800"></div>

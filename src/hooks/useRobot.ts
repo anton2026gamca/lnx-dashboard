@@ -4,10 +4,10 @@
 
 'use client';
 
-import { useEffect, useCallback, useState } from 'react';
+import { useEffect, useCallback, useRef, useState } from 'react';
 import { robotClient } from '@/lib/robotAPIClient';
 import { useRobot } from '@/context/RobotContext';
-import { SensorData, RobotMode, LogEntry, LogsBatch, PositionEstimate, MotorSettings, AutonomousSettings, GoalDetectionData } from '@/types/robot';
+import { SensorData, RobotMode, LogEntry, LogsBatch, PositionEstimate, MotorSettings, AutonomousSettings, GoalDetectionData, BluetoothState, BluetoothMessage, BluetoothPairableDevice } from '@/types/robot';
 
 /**
  * Hook to fetch sensor data periodically
@@ -489,7 +489,7 @@ export const useAutonomousSettings = () => {
     }
   };
 
-  const updateSetting = async (key: keyof AutonomousSettings, value: any) => {
+  const updateSetting = async (key: keyof AutonomousSettings, value: unknown) => {
     try {
       setSettings(prev => ({ ...prev, [key]: value }));
       await robotClient.setAutonomousSettings({[key]: value});
@@ -501,3 +501,187 @@ export const useAutonomousSettings = () => {
 
   return { settings, stateMachines, loading, error, updateSetting };
 };
+
+export const useBluetooth = (interval: number = 3000) => {
+  const { connectionState } = useRobot();
+  const [state, setState] = useState<BluetoothState | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [working, setWorking] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const activeRobotId = connectionState.activeRobotId || undefined;
+  const activeRobotIdRef = useRef<string | undefined>(activeRobotId);
+  const lastActiveRobotIdRef = useRef<string | undefined>(activeRobotId);
+
+  useEffect(() => {
+    activeRobotIdRef.current = activeRobotId;
+  }, [activeRobotId]);
+
+  const fetchState = useCallback(async (silent: boolean = false) => {
+    const requestRobotId = activeRobotId;
+    if (!connectionState.isConnected || !requestRobotId) {
+      setState(null);
+      return null;
+    }
+
+    try {
+      if (!silent) {
+        setLoading(true);
+      }
+      const data = await robotClient.getBluetoothState(requestRobotId);
+      if (activeRobotIdRef.current !== requestRobotId) {
+        return null;
+      }
+      setState(data);
+      if (!silent) {
+        setError(null);
+      }
+      return data;
+    } catch (err) {
+      if (activeRobotIdRef.current !== requestRobotId) {
+        return null;
+      }
+      setError(err instanceof Error ? err.message : 'Failed to fetch Bluetooth state');
+      return null;
+    } finally {
+      if (!silent && activeRobotIdRef.current === requestRobotId) {
+        setLoading(false);
+      }
+    }
+  }, [connectionState.isConnected, activeRobotId]);
+
+  useEffect(() => {
+    if (lastActiveRobotIdRef.current !== activeRobotId) {
+      setState(null);
+      setError(null);
+      setLoading(false);
+      setWorking(false);
+      lastActiveRobotIdRef.current = activeRobotId;
+    }
+
+    if (!connectionState.isConnected || !activeRobotId) {
+      setState(null);
+      return;
+    }
+
+    fetchState(true);
+    const timer = setInterval(() => {
+      void fetchState(true);
+    }, interval);
+    return () => clearInterval(timer);
+  }, [connectionState.isConnected, activeRobotId, interval, fetchState]);
+
+  const runAction = useCallback(async (action: () => Promise<boolean | null>) => {
+    try {
+      setWorking(true);
+      setError(null);
+      const ok = await action();
+      await fetchState(true);
+      return ok === true;
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Bluetooth operation failed');
+      return false;
+    } finally {
+      setWorking(false);
+    }
+  }, [fetchState]);
+
+  const runTask = useCallback(async <T,>(task: () => Promise<T>, fallback: T): Promise<T> => {
+    try {
+      setWorking(true);
+      setError(null);
+      return await task();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Bluetooth operation failed');
+      return fallback;
+    } finally {
+      setWorking(false);
+    }
+  }, []);
+
+  const setOtherRobot = useCallback(async (otherRobot: { mac_address: string; name?: string; hostname?: string; ip_address?: string; note?: string }) => {
+    if (!activeRobotId) return false;
+    return runAction(async () => (await robotClient.setOtherRobot(otherRobot, activeRobotId)) !== null);
+  }, [activeRobotId, runAction]);
+
+  const clearOtherRobot = useCallback(async () => {
+    if (!activeRobotId) return false;
+    return runAction(async () => (await robotClient.setOtherRobot({ clear: true }, activeRobotId)) !== null);
+  }, [activeRobotId, runAction]);
+
+  const connectToRobot = useCallback(async (macAddress?: string) => {
+    if (!activeRobotId) return false;
+    return runAction(() => robotClient.bluetoothConnectOtherRobot(macAddress, activeRobotId));
+  }, [activeRobotId, runAction]);
+
+  const disconnectFromRobot = useCallback(async (macAddress?: string) => {
+    if (!activeRobotId) return false;
+    return runAction(() => robotClient.bluetoothDisconnectOtherRobot(macAddress, activeRobotId));
+  }, [activeRobotId, runAction]);
+
+  const pairDevice = useCallback(async (device: { mac_address: string; name: string; hostname?: string; ip_address?: string }) => {
+    if (!activeRobotId) return false;
+    return runAction(async () => (await robotClient.bluetoothPairDevice(device, activeRobotId)) !== null);
+  }, [activeRobotId, runAction]);
+
+  const unpairDevice = useCallback(async (macAddress: string) => {
+    if (!activeRobotId) return false;
+    return runAction(async () => (await robotClient.bluetoothUnpairDevice(macAddress, activeRobotId)) !== null);
+  }, [activeRobotId, runAction]);
+
+  const listPairableDevices = useCallback(async (timeoutSeconds?: number): Promise<BluetoothPairableDevice[]> => {
+    if (!activeRobotId) return [];
+    return runTask(
+      () => robotClient.bluetoothListPairableDevices(
+        typeof timeoutSeconds === 'number' ? { timeout_seconds: timeoutSeconds } : {},
+        activeRobotId,
+      ),
+      [],
+    );
+  }, [activeRobotId, runTask]);
+
+  const setDiscoverable = useCallback(async (durationSeconds?: number) => {
+    if (!activeRobotId) return false;
+    return runAction(() => robotClient.setBluetoothDiscoverable(durationSeconds, activeRobotId));
+  }, [activeRobotId, runAction]);
+
+  const setNotDiscoverable = useCallback(async () => {
+    if (!activeRobotId) return false;
+    return runAction(() => robotClient.setBluetoothNotDiscoverable(activeRobotId));
+  }, [activeRobotId, runAction]);
+
+  const sendMessage = useCallback(async (messageType: string, content: string, macAddress?: string) => {
+    if (!activeRobotId) return false;
+    return runAction(() => robotClient.bluetoothSendMessage(messageType, content, macAddress, activeRobotId));
+  }, [activeRobotId, runAction]);
+
+  const getMessages = useCallback(async (options: { clear?: boolean; limit?: number } = {}): Promise<{ received: BluetoothMessage[]; sent: BluetoothMessage[] }> => {
+    if (!activeRobotId) {
+      return { received: [], sent: [] };
+    }
+    return runTask(async () => {
+      const messages = await robotClient.getBluetoothMessages(options, activeRobotId);
+      return messages ?? { received: [], sent: [] };
+    }, { received: [], sent: [] });
+  }, [activeRobotId, runTask]);
+
+  return {
+    state,
+    loading,
+    working,
+    error,
+    refresh: fetchState,
+    setOtherRobot,
+    clearOtherRobot,
+    connectToRobot,
+    disconnectFromRobot,
+    pairDevice,
+    unpairDevice,
+    listPairableDevices,
+    setDiscoverable,
+    setNotDiscoverable,
+    sendMessage,
+    getMessages,
+  };
+};
+

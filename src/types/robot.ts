@@ -175,3 +175,48 @@ export interface DetectedObject {
   color: [number, number, number];
 }
 
+export interface BluetoothDevice {
+  name: string;
+  mac_address: string;
+  hostname?: string;
+  ip_address?: string;
+  last_connected?: number;
+  is_connected: boolean;
+  device_id?: string;
+}
+
+export interface OtherRobotInfo {
+  mac_address?: string;
+  name?: string;
+  hostname?: string;
+  ip_address?: string;
+  note?: string;
+}
+
+export interface BluetoothState {
+  process_alive: boolean;
+  local_device: {
+    device_id?: string;
+    hostname?: string;
+    ip_address?: string;
+  };
+  connected_devices: BluetoothDevice[];
+  paired_devices: BluetoothDevice[];
+  other_robot: OtherRobotInfo;
+}
+
+export interface BluetoothPairableDevice {
+  name: string;
+  mac_address: string;
+  is_paired: boolean;
+}
+
+export interface BluetoothMessage {
+  message_type: string;
+  content: string;
+  sender_id?: string;
+  sender_mac?: string;
+  target_mac?: string;
+  timestamp?: number;
+  message_id?: string;
+}
