@@ -8,9 +8,11 @@ import React, { useEffect, useState } from 'react';
 import { useRobotMode } from '@/hooks/useRobot';
 import { robotClient } from '@/lib/robotAPIClient';
 
+const DEFAULT_MANUAL_SPEED = 0.7;
 export const ManualMovementComponent: React.FC<{compact?: boolean}> = ({compact = false}) => {
   const { mode, changeMode } = useRobotMode();
   const [keyPressed, setKeyPressed] = useState<Set<string>>(new Set());
+  const [speed, setSpeed] = useState<number>(DEFAULT_MANUAL_SPEED);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -55,7 +57,6 @@ export const ManualMovementComponent: React.FC<{compact?: boolean}> = ({compact 
     if (mode !== 'manual') return;
 
     let angle = null;
-    let speed = 0.7;
     let rotate = 0;
 
     if (keyPressed.has('w') && keyPressed.has('a')) angle = -45;
@@ -72,7 +73,7 @@ export const ManualMovementComponent: React.FC<{compact?: boolean}> = ({compact 
     robotClient.setManualControl(angle ?? 0, angle != null ? speed : 0, rotate).catch(err => {
       console.error('Failed to send manual control:', err);
     });
-  }, [keyPressed, mode]);
+  }, [keyPressed, mode, speed]);
 
   if (mode !== 'manual') {
     return (
@@ -90,6 +91,22 @@ export const ManualMovementComponent: React.FC<{compact?: boolean}> = ({compact 
   return (
     <div className="bg-main-100 dark:bg-main-950 border-2 border-green-500 dark:border-green-700 p-2 flex flex-col items-center justify-center h-full">
       <div className="text-xs font-bold text-green-800 dark:text-green-200 uppercase">Manual Control Active</div>
+      <div className="mt-2 w-full max-w-xs">
+        <label htmlFor="manual-speed" className="text-xs text-green-700 dark:text-green-300 font-mono flex justify-between">
+          <span>Speed</span>
+          <span>{speed.toFixed(2)}</span>
+        </label>
+        <input
+          id="manual-speed"
+          type="range"
+          min={0.1}
+          max={1}
+          step={0.05}
+          value={speed}
+          onChange={(e) => setSpeed(Number(e.target.value))}
+          className="w-full accent-green-600 dark:accent-green-400"
+        />
+      </div>
       {!compact && <div className="text-xs text-green-700 dark:text-green-300 space-y-1 font-mono mt-2 flex gap-5">
         <span><span className="text-yellow-600 dark:text-yellow-400 font-bold">WASD</span>: Movement</span>
         <span><span className="text-yellow-600 dark:text-yellow-400 font-bold">← / →</span>: Rotate</span>
