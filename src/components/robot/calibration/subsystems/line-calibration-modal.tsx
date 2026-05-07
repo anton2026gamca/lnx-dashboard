@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import { useLineCalibration } from '@/hooks/useCalibration';
 import { robotClient } from '@/lib/robotAPIClient';
 import { ManualMovementComponent, ModeComponent, SettingsComponent } from '../../dashboard/control-panel';
+import { LINE_SENSOR_MAX_VALUE } from '@/lib/robotConstants';
 
 interface LineCalibrationModalProps {
   onClose: () => void;
@@ -96,7 +97,7 @@ export const LineCalibrationModal: React.FC<LineCalibrationModalProps> = ({ onCl
         if (enabledSensors[idx]) {
           return threshold;
         } else {
-          return [0, 1000];
+          return [0, LINE_SENSOR_MAX_VALUE];
         }
       });
 
@@ -276,7 +277,7 @@ export const LineCalibrationModal: React.FC<LineCalibrationModalProps> = ({ onCl
           )}
 
           <div className="text-xs text-main-600 dark:text-main-400 mb-2">
-            Disabled sensors will be sent as 0-1000 range to the API.
+            Disabled sensors will be sent as 0-{LINE_SENSOR_MAX_VALUE} range to the API.
           </div>
 
           <div className="flex gap-1">
@@ -360,7 +361,7 @@ export const LineCalibrationModal: React.FC<LineCalibrationModalProps> = ({ onCl
                 const p2Min = manualData?.phase2_min?.[idx] ?? null;
                 const p2Max = manualData?.phase2_max?.[idx] ?? null;
                 
-                const range = 1000;
+                const range = LINE_SENSOR_MAX_VALUE;
                 const p1MinPercent = p1Min !== null ? (p1Min / range) * 100 : 0;
                 const p1MaxPercent = p1Max !== null ? (p1Max / range) * 100 : 0;
                 const p2MinPercent = p2Min !== null ? (p2Min / range) * 100 : 0;
@@ -496,7 +497,7 @@ export const LineCalibrationModal: React.FC<LineCalibrationModalProps> = ({ onCl
                           const p1Max = manualData?.phase1_max?.[idx] ?? null;
                           const p2Min = manualData?.phase2_min?.[idx] ?? null;
                           const p2Max = manualData?.phase2_max?.[idx] ?? null;
-                          const range = 1000;
+                          const range = LINE_SENSOR_MAX_VALUE;
                           const p1MinPercent = p1Min !== null ? (p1Min / range) * 100 : 0;
                           const p1MaxPercent = p1Max !== null ? (p1Max / range) * 100 : 0;
                           const p2MinPercent = p2Min !== null ? (p2Min / range) * 100 : 0;

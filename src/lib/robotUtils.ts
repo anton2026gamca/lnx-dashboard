@@ -3,6 +3,7 @@
  */
 
 import { FormattedSensorData, GoalDetectionData, PositionEstimate, SensorData } from '@/types/robot';
+import { LINE_SENSOR_MAX_VALUE } from './robotConstants';
 
 /**
  * Validate IP address format
@@ -56,7 +57,7 @@ export const formatSensorData = (data: SensorData | null, goalDetection: GoalDet
     line: data?.line
       ? {
           detected: data.line.detected.map(d => d ? 'Yes' : 'No'),
-          raw: data.line.raw.map((v, _) => `${(v / 1000 * 100).toFixed(0)}`),
+          raw: data.line.raw.map((v, _) => `${(v / LINE_SENSOR_MAX_VALUE * 100).toFixed(0)}`),
           thresholds: data.line.thresholds.map((t, _) => `${t[0]}-${t[1]}`),
         }
       : { detected: new Array(12).fill('No'), raw: new Array(12).fill(''), thresholds: new Array(12).fill('__-__') },

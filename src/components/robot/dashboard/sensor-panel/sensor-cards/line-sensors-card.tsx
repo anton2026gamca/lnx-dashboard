@@ -2,6 +2,7 @@
 
 import { FormattedSensorData, SensorData } from "@/types/robot";
 import { SensorCard } from "./sensor-card";
+import { LINE_SENSOR_MAX_VALUE } from "@/lib/robotConstants";
 
 
 
@@ -24,7 +25,7 @@ const LineSensors: React.FC<LineSensorsProps> = ({ labels, values, detected }) =
       style={{ width: `${center * 2}px`, height: `${center * 2}px` }}
     >
       {values.map((rawValue, i) => {
-        const value = rawValue / 1000;
+        const value = rawValue / LINE_SENSOR_MAX_VALUE;
         const angle = (i / numSensors) * 360 - 90;
         const rad = (angle * Math.PI) / 180;
         const divSize = (sensorSize + highlightOutline / 2);

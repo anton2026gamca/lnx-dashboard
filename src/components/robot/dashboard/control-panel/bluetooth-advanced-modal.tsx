@@ -45,7 +45,6 @@ export const BluetoothAdvancedModal: React.FC<BluetoothAdvancedModalProps> = ({ 
     unpairDevice,
     listPairableDevices,
     setDiscoverable,
-    setNotDiscoverable,
     sendMessage,
     getMessages,
   } = useBluetooth(2000);
