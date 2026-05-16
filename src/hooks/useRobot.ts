@@ -611,17 +611,49 @@ export const useBluetooth = (interval: number = 3000) => {
 
   const connectToRobot = useCallback(async (macAddress?: string) => {
     if (!activeRobotId) return false;
-    return runAction(() => robotClient.bluetoothConnectOtherRobot(macAddress, activeRobotId));
-  }, [activeRobotId, runAction]);
+    const result = await robotClient.bluetoothConnectOtherRobot(macAddress, activeRobotId);
+    const success = result?.result?.success === true || result?.status === 'ok';
+    
+    // Run fetchState as an action if successful
+    if (success) {
+      try {
+        setWorking(true);
+        await fetchState(true);
+        return true;
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Failed to connect to robot');
+        return false;
+      } finally {
+        setWorking(false);
+      }
+    }
+    return false;
+  }, [activeRobotId, fetchState]);
 
   const disconnectFromRobot = useCallback(async (macAddress?: string) => {
     if (!activeRobotId) return false;
-    return runAction(() => robotClient.bluetoothDisconnectOtherRobot(macAddress, activeRobotId));
-  }, [activeRobotId, runAction]);
+    const result = await robotClient.bluetoothDisconnectOtherRobot(macAddress, activeRobotId);
+    const success = result?.result?.success === true || result?.status === 'ok';
+    
+    // Run fetchState as an action if successful
+    if (success) {
+      try {
+        setWorking(true);
+        await fetchState(true);
+        return true;
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Failed to disconnect from robot');
+        return false;
+      } finally {
+        setWorking(false);
+      }
+    }
+    return false;
+  }, [activeRobotId, fetchState]);
 
-  const pairDevice = useCallback(async (device: { mac_address: string; name: string; hostname?: string; ip_address?: string }) => {
+  const pairDevice = useCallback(async (macAddress: string) => {
     if (!activeRobotId) return false;
-    return runAction(async () => (await robotClient.bluetoothPairDevice(device, activeRobotId)) !== null);
+    return runAction(async () => (await robotClient.bluetoothPairDevice(macAddress, activeRobotId)) !== null);
   }, [activeRobotId, runAction]);
 
   const unpairDevice = useCallback(async (macAddress: string) => {
@@ -640,20 +672,47 @@ export const useBluetooth = (interval: number = 3000) => {
     );
   }, [activeRobotId, runTask]);
 
-  const setDiscoverable = useCallback(async (durationSeconds?: number) => {
+  const setBluetoothPairingMode = useCallback(async (enabled: boolean) => {
     if (!activeRobotId) return false;
-    return runAction(() => robotClient.setBluetoothDiscoverable(durationSeconds, activeRobotId));
-  }, [activeRobotId, runAction]);
-
-  const setNotDiscoverable = useCallback(async () => {
-    if (!activeRobotId) return false;
-    return runAction(() => robotClient.setBluetoothNotDiscoverable(activeRobotId));
-  }, [activeRobotId, runAction]);
+    const result = await robotClient.setBluetoothPairingMode(enabled, activeRobotId);
+    const success = result?.pairing_mode_enabled === enabled;
+    
+    // Run fetchState as an action if successful
+    if (success) {
+      try {
+        setWorking(true);
+        await fetchState(true);
+        return true;
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Failed to set pairing mode');
+        return false;
+      } finally {
+        setWorking(false);
+      }
+    }
+    return false;
+  }, [activeRobotId, fetchState]);
 
   const sendMessage = useCallback(async (messageType: string, content: string, macAddress?: string) => {
     if (!activeRobotId) return false;
-    return runAction(() => robotClient.bluetoothSendMessage(messageType, content, macAddress, activeRobotId));
-  }, [activeRobotId, runAction]);
+    const result = await robotClient.bluetoothSendMessage(messageType, content, macAddress, activeRobotId);
+    const success = result?.result?.success === true || result?.status === 'ok';
+    
+    // Run fetchState as an action if successful
+    if (success) {
+      try {
+        setWorking(true);
+        await fetchState(true);
+        return true;
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Failed to send message');
+        return false;
+      } finally {
+        setWorking(false);
+      }
+    }
+    return false;
+  }, [activeRobotId, fetchState]);
 
   const getMessages = useCallback(async (options: { clear?: boolean; limit?: number } = {}): Promise<{ received: BluetoothMessage[]; sent: BluetoothMessage[] }> => {
     if (!activeRobotId) {
@@ -678,8 +737,7 @@ export const useBluetooth = (interval: number = 3000) => {
     pairDevice,
     unpairDevice,
     listPairableDevices,
-    setDiscoverable,
-    setNotDiscoverable,
+    setBluetoothPairingMode,
     sendMessage,
     getMessages,
   };

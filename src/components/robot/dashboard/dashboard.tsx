@@ -5,7 +5,6 @@
 'use client';
 
 import React from 'react';
-import { Button } from '@/components/ui/button';
 import { useRobot } from '@/context/RobotContext';
 import { LogPanel } from '@/components/robot/dashboard/log-panel';
 import { ControlPanel } from '@/components/robot/dashboard/control-panel';

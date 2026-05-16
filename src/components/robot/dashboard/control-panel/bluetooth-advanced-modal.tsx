@@ -44,13 +44,12 @@ export const BluetoothAdvancedModal: React.FC<BluetoothAdvancedModalProps> = ({ 
     pairDevice,
     unpairDevice,
     listPairableDevices,
-    setDiscoverable,
+    setBluetoothPairingMode,
     sendMessage,
     getMessages,
   } = useBluetooth(2000);
   const { connectionState } = useRobot();
 
-  const [discoverableSeconds, setDiscoverableSeconds] = useState('120');
   const [otherNote, setOtherNote] = useState('');
 
   const [scanTimeout, setScanTimeout] = useState('6');
@@ -127,10 +126,7 @@ export const BluetoothAdvancedModal: React.FC<BluetoothAdvancedModalProps> = ({ 
   };
 
   const quickPair = async (device: BluetoothPairableDevice) => {
-    const ok = await pairDevice({
-      mac_address: device.mac_address,
-      name: device.name || device.mac_address,
-    });
+    const ok = await pairDevice(device.mac_address);
     if (!ok) return;
 
     await connectToRobot(device.mac_address);
@@ -349,25 +345,22 @@ export const BluetoothAdvancedModal: React.FC<BluetoothAdvancedModalProps> = ({ 
         </div>
 
         <div className={cn(sectionClass, "flex justify-between space-y-0")}>
-          <div className="font-semibold text-main-900 dark:text-main-100">Discoverability</div>
+          <div className="font-semibold text-main-900 dark:text-main-100">Pairing Mode</div>
           <div className="flex flex-wrap gap-1.5 items-center">
             <Button
               className="px-1.5 text-[10px]"
-              onClick={() => {
-                const secs = Number(discoverableSeconds);
-                void setDiscoverable(Number.isFinite(secs) && secs > 0 ? secs : undefined);
-              }}
+              onClick={() => void setBluetoothPairingMode(true)}
               disabled={working || loading}
             >
-              Set discoverable
+              Enable
             </Button>
-            for
-            <input
-              value={discoverableSeconds}
-              onChange={(e) => setDiscoverableSeconds(e.target.value)}
-              className="w-20 bg-main-100 dark:bg-main-900 border border-main-400 dark:border-main-700 px-1.5 text-[11px] text-center"
-            />
-            seconds
+            <Button
+              className="px-1.5 text-[10px]"
+              onClick={() => void setBluetoothPairingMode(false)}
+              disabled={working || loading}
+            >
+              Disable
+            </Button>
           </div>
         </div>
 

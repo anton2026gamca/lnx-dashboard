@@ -297,23 +297,55 @@ export class RobotAPIClient {
     return response?.other_robot ?? null;
   }
 
-  async bluetoothConnectOtherRobot(macAddress?: string, robotId?: string): Promise<boolean> {
-    const response = await this._emit<{ status?: 'ok' | 'error' }>('bluetooth_connect_other_robot', macAddress ? { mac_address: macAddress } : {}, robotId);
-    return response?.status === 'ok';
+  async bluetoothConnectOtherRobot(macAddress?: string, robotId?: string): Promise<{
+    result?: {
+      command_id: number;
+      success: boolean;
+      data: object;
+      error?: string;
+      timestamp: number;
+    };
+    connected_devices?: object[];
+    status?: string;
+    error?: string;
+  } | null> {
+    return this._emit('bluetooth_connect_other_robot', macAddress ? { mac_address: macAddress } : {}, robotId);
   }
 
-  async bluetoothDisconnectOtherRobot(macAddress?: string, robotId?: string): Promise<boolean> {
-    const response = await this._emit<{ status?: 'ok' | 'error' }>('bluetooth_disconnect_other_robot', macAddress ? { mac_address: macAddress } : {}, robotId);
-    return response?.status === 'ok';
+  async bluetoothDisconnectOtherRobot(macAddress?: string, robotId?: string): Promise<{
+    result?: {
+      command_id: number;
+      success: boolean;
+      data: object;
+      error?: string;
+      timestamp: number;
+    };
+    connected_devices?: object[];
+    status?: string;
+    error?: string;
+  } | null> {
+    return this._emit('bluetooth_disconnect_other_robot', macAddress ? { mac_address: macAddress } : {}, robotId);
   }
 
-  async bluetoothSendMessage(messageType: string, content: string, macAddress?: string, robotId?: string): Promise<boolean> {
-    const response = await this._emit<{ status?: 'ok' | 'error' }>('bluetooth_send_message', {
+  async bluetoothSendMessage(messageType: string, content: string, macAddress?: string, robotId?: string): Promise<{
+    result?: {
+      command_id: number;
+      success: boolean;
+      data: {
+        mac_address: string;
+        message_id: string;
+      };
+      error?: string;
+      timestamp: number;
+    };
+    status?: string;
+    error?: string;
+  } | null> {
+    return this._emit('bluetooth_send_message', {
       ...(macAddress ? { mac_address: macAddress } : {}),
       message_type: messageType,
       content,
     }, robotId);
-    return response?.status === 'ok';
   }
 
   async getBluetoothMessages(
@@ -330,11 +362,8 @@ export class RobotAPIClient {
     };
   }
 
-  async bluetoothPairDevice(
-    device: { mac_address: string; name: string; hostname?: string; ip_address?: string },
-    robotId?: string,
-  ): Promise<BluetoothDevice[] | null> {
-    const response = await this._emit<{ paired_devices?: BluetoothDevice[] }>('bluetooth_pair_device', device, robotId);
+  async bluetoothPairDevice(macAddress: string, robotId?: string): Promise<BluetoothDevice[] | null> {
+    const response = await this._emit<{ paired_devices?: BluetoothDevice[] }>('bluetooth_pair_device', { mac_address: macAddress }, robotId);
     return Array.isArray(response?.paired_devices) ? response.paired_devices : null;
   }
 
@@ -365,15 +394,25 @@ export class RobotAPIClient {
     return Array.isArray(nested) ? nested : [];
   }
 
-  async setBluetoothDiscoverable(durationSeconds?: number, robotId?: string): Promise<boolean> {
-    const payload = typeof durationSeconds === 'number' ? { duration_seconds: durationSeconds } : {};
-    const response = await this._emit<{ status?: 'ok' | 'error' }>('set_bluetooth_discoverable', payload, robotId);
-    return response?.status === 'ok';
-  }
-
-  async setBluetoothNotDiscoverable(robotId?: string): Promise<boolean> {
-    const response = await this._emit<{ status?: 'ok' | 'error' }>('set_bluetooth_not_discoverable', {}, robotId);
-    return response?.status === 'ok';
+  /**
+   * Set Bluetooth pairing mode (enable or disable discoverability)
+   * @param enabled - true to enable pairing mode, false to disable
+   */
+  async setBluetoothPairingMode(enabled: boolean, robotId?: string): Promise<{ pairing_mode_enabled?: boolean } | null> {
+    const response = await this._emit<{ 
+      result?: { 
+        data?: { 
+          pairing_mode_enabled: boolean 
+        } 
+      };
+      pairing_mode_enabled?: boolean 
+    }>('set_bluetooth_pairing_mode', { enabled }, robotId);
+    
+    // Handle both direct response and nested response format
+    if (response?.pairing_mode_enabled !== undefined) {
+      return { pairing_mode_enabled: response.pairing_mode_enabled };
+    }
+    return response?.result?.data ? { pairing_mode_enabled: response.result.data.pairing_mode_enabled } : null;
   }
 
   // ============ Control Methods ============
@@ -462,17 +501,11 @@ export class RobotAPIClient {
    * Get line calibration status with all detailed information
    */
   async getLineCalibrationStatus(robotId?: string): Promise<{
-    active?: boolean;
-    phase?: number;
-    current_thresholds?: number[][];
-    calibration_min?: number[];
-    calibration_max?: number[];
-    phase1_complete?: boolean;
-    phase1_min?: number[];
-    phase1_max?: number[];
-    phase2_complete?: boolean;
-    phase2_min?: number[];
-    phase2_max?: number[];
+    phase: number;
+    line_sensor_count: number;
+    min_values: number[];
+    max_values: number[];
+    thresholds: Array<[number, number]>;
   } | null> {
     return this._emit('get_line_calibration_status', {}, robotId);
   }
@@ -505,7 +538,7 @@ export class RobotAPIClient {
    * Stop goal distance calibration
    */
   async stopGoalDistanceCalibration(robotId?: string): Promise<{
-    focal_length?: number;
+    distance_constant?: number;
     message?: string;
   } | null> {
     return this._emit('stop_goal_distance_calibration', {}, robotId);
@@ -522,8 +555,11 @@ export class RobotAPIClient {
    * Get goal distance calibration status
    */
   async getGoalDistanceCalibrationStatus(robotId?: string): Promise<{
-    calibrating: boolean;
-    distance_offset: number;
+    active: boolean;
+    initial_distance_mm: number;
+    line_distance_mm: number;
+    samples: number;
+    distance_constant: number | null;
   } | null> {
     return this._emit('get_goal_distance_calibration_status', {}, robotId);
   }
@@ -531,7 +567,7 @@ export class RobotAPIClient {
   /**
    * Get goal focal length
    */
-  async getGoalFocalLength(robotId?: string): Promise<{ focal_length: number } | null> {
+  async getGoalFocalLength(robotId?: string): Promise<{ focal_length_pixels: number } | null> {
     return this._emit('get_goal_focal_length', {}, robotId);
   }
 
