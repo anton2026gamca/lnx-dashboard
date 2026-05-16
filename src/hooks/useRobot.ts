@@ -6,6 +6,7 @@
 
 import { useEffect, useCallback, useRef, useState } from 'react';
 import { robotClient } from '@/lib/robotAPIClient';
+import type { VideoCamera } from '@/lib/robotAPIClient';
 import { useRobot } from '@/context/RobotContext';
 import { SensorData, RobotMode, LogEntry, LogsBatch, PositionEstimate, MotorSettings, AutonomousSettings, GoalDetectionData, BluetoothState, BluetoothMessage, BluetoothPairableDevice } from '@/types/robot';
 
@@ -233,23 +234,31 @@ export const useTargetGoal = () => {
 /**
  * Hook for video streaming
  */
-export const useVideoStream = (enabled: boolean, fps: number = 30, showDetections: boolean = true) => {
+export const useVideoStream = (
+  enabled: boolean,
+  fps: number = 30,
+  showDetections: boolean = true,
+  camera: VideoCamera = 'front',
+) => {
   const { connectionState } = useRobot();
-  const [frame, setFrame] = useState<Uint8Array | null>(null);
+  const [frontFrame, setFrontFrame] = useState<Uint8Array | null>(null);
+  const [backFrame, setBackFrame] = useState<Uint8Array | null>(null);
   const [isStreaming, setIsStreaming] = useState(false);
   const [lastActiveRobotId, setLastActiveRobotId] = useState<string | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
 
   useEffect(() => {
     if (connectionState.activeRobotId && lastActiveRobotId !== connectionState.activeRobotId) {
-      setFrame(null);
+      setFrontFrame(null);
+      setBackFrame(null);
       setLastActiveRobotId(connectionState.activeRobotId);
       return;
     }
 
     if (!connectionState.isConnected) {
       setIsStreaming(false);
-      setFrame(null);
+      setFrontFrame(null);
+      setBackFrame(null);
       setLastActiveRobotId(null);
       return;
     }
@@ -261,11 +270,23 @@ export const useVideoStream = (enabled: boolean, fps: number = 30, showDetection
       }
 
       const unsubscribe = robotClient.subscribeVideo(
-        (frameData: Uint8Array) => {
-          setFrame(frameData);
+        (frameData: Uint8Array, sourceCamera: 'front' | 'back') => {
+          if (sourceCamera === 'front') {
+            setFrontFrame(frameData);
+            if (camera === 'front') {
+              setBackFrame(null);
+            }
+            return;
+          }
+
+          setBackFrame(frameData);
+          if (camera === 'back') {
+            setFrontFrame(null);
+          }
         },
         fps,
         showDetections,
+        camera,
       );
 
       setIsStreaming(true);
@@ -278,13 +299,14 @@ export const useVideoStream = (enabled: boolean, fps: number = 30, showDetection
       console.error('Failed to subscribe to video:', err);
       setIsStreaming(false);
     }
-  }, [connectionState.isConnected, connectionState.activeRobotId, lastActiveRobotId, enabled, fps, showDetections, refreshKey]);
+  }, [connectionState.isConnected, connectionState.activeRobotId, lastActiveRobotId, enabled, fps, showDetections, camera, refreshKey]);
 
-  const refresh = () => {
+  const refresh = useCallback(() => {
     setRefreshKey((prev) => prev + 1);
-  }
+  }, []);
 
-  return { frame, isStreaming, refresh };
+  const frame = camera === 'back' ? backFrame : frontFrame;
+  return { frame, frontFrame, backFrame, isStreaming, refresh };
 };
 
 /**
@@ -742,4 +764,3 @@ export const useBluetooth = (interval: number = 3000) => {
     getMessages,
   };
 };
-

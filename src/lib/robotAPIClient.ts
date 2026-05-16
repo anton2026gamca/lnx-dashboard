@@ -5,6 +5,8 @@
 import { io, Socket } from 'socket.io-client';
 import { RobotConnection, RobotMode, SensorData, MotorSettings, GoalSettings, AutonomousSettings, LogsBatch, DetectedObject, PositionEstimate, GoalDetectionData, BluetoothState, BluetoothDevice, OtherRobotInfo, BluetoothMessage, BluetoothPairableDevice } from '@/types/robot';
 
+export type VideoCamera = 'front' | 'back' | 'both';
+
 export class RobotAPIClient {
   private socket: Socket | null = null;
   private robot: RobotConnection | null = null;
@@ -237,10 +239,24 @@ export class RobotAPIClient {
   }
 
   /**
-   * Get goal settings
+   * Get goal settings (goal color only)
    */
-  async getGoalSettings(robotId?: string): Promise<GoalSettings | null> {
+  async getGoalSettings(robotId?: string): Promise<{ goal_color: 'yellow' | 'blue' } | null> {
     return this._emit('get_goal_settings', {}, robotId);
+  }
+
+  /**
+   * Get goal color calibration ranges for a specific camera
+   * @param camera - Camera to get calibration for (default: "front")
+   */
+  async getGoalColorCalibration(
+    camera: Exclude<VideoCamera, 'both'> = 'front',
+    robotId?: string,
+  ): Promise<{
+    yellow_ranges: Array<{ lower: [number, number, number]; upper: [number, number, number] }>;
+    blue_ranges: Array<{ lower: [number, number, number]; upper: [number, number, number] }>;
+  } | null> {
+    return this._emit('get_goal_color_calibration', { camera }, robotId);
   }
 
   /**
@@ -260,11 +276,24 @@ export class RobotAPIClient {
   }
 
   /**
-   * Get detected objects
+   * Get detected objects, optionally filtered by camera
+   * @param camera - Camera to filter by (default: "both")
    */
-  async getDetections(robotId?: string): Promise<DetectedObject[]> {
-    const response = await this._emit<{ detections?: DetectedObject[] }>('get_detections', {}, robotId);
-    return response?.detections || [];
+  async getDetections(
+    camera: VideoCamera = 'both',
+    robotId?: string,
+  ): Promise<{ camera: VideoCamera; detections: { front?: DetectedObject[]; back?: DetectedObject[] } } | null> {
+    const response = await this._emit<{
+      camera?: VideoCamera;
+      detections?: { front?: DetectedObject[]; back?: DetectedObject[] };
+    }>('get_detections', { camera }, robotId);
+    if (!response) {
+      return null;
+    }
+    return {
+      camera: response.camera ?? camera,
+      detections: response.detections ?? {},
+    };
   }
 
   // ============ Bluetooth Methods ============
@@ -447,10 +476,29 @@ export class RobotAPIClient {
   }
 
   /**
-   * Set goal settings
+   * Set goal settings (goal color only)
    */
-  async setGoalSettings(settings: GoalSettings, robotId?: string): Promise<void> {
-    await this._emit('set_goal_settings', settings, robotId);
+  async setGoalSettings(settings: Pick<GoalSettings, 'goal_color'>, robotId?: string): Promise<void> {
+    await this._emit('set_goal_settings', { goal_color: settings.goal_color }, robotId);
+  }
+
+  /**
+   * Set goal color calibration ranges
+   * @param camera - Camera(s) to apply calibration to
+   * @param yellowRanges - HSV ranges for yellow goal detection
+   * @param blueRanges - HSV ranges for blue goal detection
+   */
+  async setGoalColorCalibration(
+    camera: VideoCamera = 'both',
+    yellowRanges?: Array<{ lower: [number, number, number]; upper: [number, number, number] }>,
+    blueRanges?: Array<{ lower: [number, number, number]; upper: [number, number, number] }>,
+    robotId?: string,
+  ): Promise<void> {
+    await this._emit('set_goal_color_calibration', {
+      camera,
+      ...(yellowRanges !== undefined && { yellow_ranges: yellowRanges }),
+      ...(blueRanges !== undefined && { blue_ranges: blueRanges }),
+    }, robotId);
   }
 
   /**
@@ -513,32 +561,41 @@ export class RobotAPIClient {
   /**
    * Calibrate ball detection distance
    * @param knownDistanceMm - Known distance in millimeters
+   * @param camera - Camera to calibrate (default: "front")
    */
-  async calibrateBallDistance(knownDistanceMm: number, robotId?: string): Promise<{ calibration_constant: number } | null> {
-    return this._emit('camera_ball_distance_calibration', { known_distance_mm: knownDistanceMm }, robotId);
+  async calibrateBallDistance(
+    knownDistanceMm: number,
+    robotId?: string,
+    camera: Exclude<VideoCamera, 'both'> = 'front',
+  ): Promise<{ calibration_constant: number } | null> {
+    return this._emit('camera_ball_distance_calibration', { known_distance_mm: knownDistanceMm, camera }, robotId);
   }
 
   /**
    * Start goal distance calibration
    * @param initialDistance - Initial distance in mm (default 200)
    * @param lineDistance - Line distance in mm (default 200)
+   * @param camera - Camera to use (default: "front")
    */
   async startGoalDistanceCalibration(
     initialDistance: number = 200,
     lineDistance: number = 200,
     robotId?: string,
+    camera: Exclude<VideoCamera, 'both'> = 'front',
   ): Promise<void> {
     await this._emit('start_goal_distance_calibration', {
       initial_distance: initialDistance,
       line_distance: lineDistance,
+      camera,
     }, robotId);
   }
 
   /**
-   * Stop goal distance calibration
+   * Stop goal distance calibration and save results
    */
   async stopGoalDistanceCalibration(robotId?: string): Promise<{
-    distance_constant?: number;
+    focal_length_pixels?: number;
+    camera?: 'front' | 'back';
     message?: string;
   } | null> {
     return this._emit('stop_goal_distance_calibration', {}, robotId);
@@ -556,41 +613,54 @@ export class RobotAPIClient {
    */
   async getGoalDistanceCalibrationStatus(robotId?: string): Promise<{
     active: boolean;
-    initial_distance_mm: number;
-    line_distance_mm: number;
-    samples: number;
-    distance_constant: number | null;
+    phase?: 'initial' | 'driving';
+    initial_distance_mm?: number;
+    line_distance_mm?: number;
+    initial_height_pixels?: number | null;
+    line_height_pixels?: number | null;
+    camera?: 'front' | 'back';
   } | null> {
     return this._emit('get_goal_distance_calibration_status', {}, robotId);
   }
 
   /**
    * Get goal focal length
+   * @param camera - Camera to get focal length for (default: "front")
    */
-  async getGoalFocalLength(robotId?: string): Promise<{ focal_length_pixels: number } | null> {
-    return this._emit('get_goal_focal_length', {}, robotId);
+  async getGoalFocalLength(
+    camera: Exclude<VideoCamera, 'both'> = 'front',
+    robotId?: string,
+  ): Promise<{ focal_length_pixels: number; camera: 'front' | 'back' } | null> {
+    return this._emit('get_goal_focal_length', { camera }, robotId);
   }
 
   /**
    * Set goal focal length
    * @param focalLength - Focal length value
+   * @param camera - Camera(s) to apply to (default: "both")
    */
-  async setGoalFocalLength(focalLength: number, robotId?: string): Promise<void> {
-    await this._emit('set_goal_focal_length', { focal_length_pixels: focalLength }, robotId);
+  async setGoalFocalLength(
+    focalLength: number,
+    robotId?: string,
+    camera: VideoCamera = 'both',
+  ): Promise<void> {
+    await this._emit('set_goal_focal_length', { focal_length_pixels: focalLength, camera }, robotId);
   }
 
   /**
    * Compute HSV values from image regions
    * @param regions - Array of regions with x, y, width, height
+   * @param camera - Camera to capture from (default: "front")
    */
   async computeHsvFromRegions(
     regions: Array<{x: number; y: number; width: number; height: number}>,
     robotId?: string,
+    camera: Exclude<VideoCamera, 'both'> = 'front',
   ): Promise<{
     lower: [number, number, number];
     upper: [number, number, number];
   } | null> {
-    return this._emit('compute_hsv_from_regions', { regions }, robotId);
+    return this._emit('compute_hsv_from_regions', { camera, regions }, robotId);
   }
 
   /**
@@ -602,6 +672,7 @@ export class RobotAPIClient {
 
   /**
    * Set ball color calibration with ranges
+   * @param camera - Camera(s) to apply to (default: "both")
    */
   async setBallCalibration(
     ranges: Array<{
@@ -609,29 +680,37 @@ export class RobotAPIClient {
       upper: [number, number, number];
     }>,
     robotId?: string,
+    camera: VideoCamera = 'both',
   ): Promise<void> {
-    await this._emit('set_ball_calibration', { ranges }, robotId);
+    await this._emit('set_ball_calibration', { camera, ranges }, robotId);
   }
 
   /**
    * Get ball color calibration
+   * @param camera - Camera to get calibration for (default: "front")
    */
-  async getBallColorCalibration(robotId?: string): Promise<{
+  async getBallColorCalibration(
+    camera: Exclude<VideoCamera, 'both'> = 'front',
+    robotId?: string,
+  ): Promise<{
+    camera: 'front' | 'back';
     ranges: Array<{
       lower: [number, number, number];
       upper: [number, number, number];
     }>;
   } | null> {
-    return this._emit('get_ball_calibration', {}, robotId);
+    return this._emit('get_ball_calibration', { camera }, robotId);
   }
 
   /**
    * Add a new HSV range for ball color detection
+   * @param camera - Camera(s) to apply to (default: "both")
    */
   async addBallColorRange(
     lower: [number, number, number],
     upper: [number, number, number],
     robotId?: string,
+    camera: VideoCamera = 'both',
   ): Promise<
     Array<{
       lower: [number, number, number];
@@ -643,14 +722,19 @@ export class RobotAPIClient {
         lower: [number, number, number];
         upper: [number, number, number];
       }>;
-    }>('add_ball_color_range', { lower, upper }, robotId);
+    }>('add_ball_color_range', { lower, upper, camera }, robotId);
     return response?.ranges || null;
   }
 
   /**
    * Remove a ball color range by index
+   * @param camera - Camera(s) to apply to (default: "both")
    */
-  async removeBallColorRange(index: number, robotId?: string): Promise<
+  async removeBallColorRange(
+    index: number,
+    robotId?: string,
+    camera: VideoCamera = 'both',
+  ): Promise<
     Array<{
       lower: [number, number, number];
       upper: [number, number, number];
@@ -661,18 +745,20 @@ export class RobotAPIClient {
         lower: [number, number, number];
         upper: [number, number, number];
       }>;
-    }>('remove_ball_color_range', { index }, robotId);
+    }>('remove_ball_color_range', { index, camera }, robotId);
     return response?.ranges || null;
   }
 
   /**
    * Add a new HSV range for goal color detection
+   * @param camera - Camera(s) to apply to (default: "both")
    */
   async addGoalColorRange(
     goalColor: 'yellow' | 'blue',
     lower: [number, number, number],
     upper: [number, number, number],
     robotId?: string,
+    camera: VideoCamera = 'both',
   ): Promise<
     Array<{
       lower: [number, number, number];
@@ -688,17 +774,20 @@ export class RobotAPIClient {
       goal_color: goalColor,
       lower,
       upper,
+      camera,
     }, robotId);
     return response?.ranges || null;
   }
 
   /**
    * Remove a goal color range by index
+   * @param camera - Camera(s) to apply to (default: "both")
    */
   async removeGoalColorRange(
     goalColor: 'yellow' | 'blue',
     index: number,
     robotId?: string,
+    camera: VideoCamera = 'both',
   ): Promise<
     Array<{
       lower: [number, number, number];
@@ -713,6 +802,7 @@ export class RobotAPIClient {
     }>('remove_goal_color_range', {
       goal_color: goalColor,
       index,
+      camera,
     }, robotId);
     return response?.ranges || null;
   }
@@ -817,9 +907,10 @@ export class RobotAPIClient {
    * Subscribe to video frames
    */
   subscribeVideo(
-    onFrame: (frame: Uint8Array) => void,
+    onFrame: (frame: Uint8Array, camera: Exclude<VideoCamera, 'both'>) => void,
     fps: number = 30,
     showDetections: boolean = true,
+    camera: VideoCamera = 'both',
     robotId?: string,
   ): () => void {
     const connection = this.getConnection(robotId);
@@ -830,35 +921,74 @@ export class RobotAPIClient {
     const { socket, robot } = connection;
     const effectiveRobotId = robot.id;
 
-    const handleFrame = (frame: unknown) => {
+    const toUint8Array = (frame: unknown): Uint8Array | null => {
       let arr;
       if (frame instanceof Uint8Array) {
         arr = frame;
       } else if (frame instanceof ArrayBuffer) {
         arr = new Uint8Array(frame);
-      } else if (frame && frame instanceof Buffer) {
+      } else if (typeof Buffer !== 'undefined' && frame instanceof Buffer) {
         arr = new Uint8Array(frame);
       } else {
-        console.warn('Unknown frame type', frame);
+        return null;
+      }
+      return arr;
+    };
+
+    const handleFrontFrame = (frame: unknown) => {
+      const arr = toUint8Array(frame);
+      if (!arr) {
+        console.warn('Unknown front frame type', frame);
         return;
       }
-      onFrame(arr);
+      onFrame(arr, 'front');
+    };
+
+    const handleBackFrame = (frame: unknown) => {
+      const arr = toUint8Array(frame);
+      if (!arr) {
+        console.warn('Unknown back frame type', frame);
+        return;
+      }
+      onFrame(arr, 'back');
+    };
+
+    const handleLegacyFrame = (frame: unknown) => {
+      const arr = toUint8Array(frame);
+      if (!arr) {
+        console.warn('Unknown legacy frame type', frame);
+        return;
+      }
+      if (camera !== 'back') {
+        onFrame(arr, 'front');
+      }
     };
 
     if (!this.subscriptionHandlers.has(effectiveRobotId)) {
       this.subscriptionHandlers.set(effectiveRobotId, new Map());
     }
     const robotHandlers = this.subscriptionHandlers.get(effectiveRobotId)!;
-    robotHandlers.set('video_frame', handleFrame);
-
-    socket.on('video_frame', handleFrame);
-    socket.emit('subscribe_video', { fps, show_detections: showDetections });
+    if (camera === 'both' || camera === 'front') {
+      robotHandlers.set('video_frame_front', handleFrontFrame);
+      socket.on('video_frame_front', handleFrontFrame);
+    }
+    if (camera === 'both' || camera === 'back') {
+      robotHandlers.set('video_frame_back', handleBackFrame);
+      socket.on('video_frame_back', handleBackFrame);
+    }
+    robotHandlers.set('video_frame', handleLegacyFrame);
+    socket.on('video_frame', handleLegacyFrame);
+    socket.emit('subscribe_video', { fps, show_detections: showDetections, camera });
 
     return () => {
-      socket.off('video_frame', handleFrame);
+      socket.off('video_frame_front', handleFrontFrame);
+      socket.off('video_frame_back', handleBackFrame);
+      socket.off('video_frame', handleLegacyFrame);
       socket.emit('unsubscribe_video', {});
       const handlers = this.subscriptionHandlers.get(effectiveRobotId);
       if (handlers) {
+        handlers.delete('video_frame_front');
+        handlers.delete('video_frame_back');
         handlers.delete('video_frame');
       }
     };

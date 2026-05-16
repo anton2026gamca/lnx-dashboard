@@ -9,12 +9,28 @@ interface VideoFeedSettingsProps {
   videoEnabled?: boolean;
   setFps?: (fps: number) => void;
   setVideoEnabled?: (enabled: boolean) => void;
+  viewMode?: 'single' | 'both';
+  setViewMode?: (mode: 'single' | 'both') => void;
+  singleCamera?: 'front' | 'back';
+  setSingleCamera?: (camera: 'front' | 'back') => void;
   refresh?: () => void;
   forceEnabled?: boolean;
   forceFPS?: number;
 }
 
-export const VideoFeedSettings: React.FC<VideoFeedSettingsProps> = ({fps, videoEnabled, setFps, setVideoEnabled, refresh, forceEnabled = false, forceFPS = undefined}) => {
+export const VideoFeedSettings: React.FC<VideoFeedSettingsProps> = ({
+  fps,
+  videoEnabled,
+  setFps,
+  setVideoEnabled,
+  viewMode = 'single',
+  setViewMode,
+  singleCamera = 'front',
+  setSingleCamera,
+  refresh,
+  forceEnabled = false,
+  forceFPS = undefined,
+}) => {
   return (forceEnabled !== true || !forceFPS) && (
     <div className="p-1 flex gap-5 items-center">
       {forceEnabled !== true && (
@@ -27,6 +43,39 @@ export const VideoFeedSettings: React.FC<VideoFeedSettingsProps> = ({fps, videoE
           className="px-1 text-sm font-medium flex-1 max-h-4"
         >{`Video: ${videoEnabled ? 'ON' : 'OFF'}`}</Button>
       )}
+
+      <div className="flex items-center gap-1">
+        <span className="text-sm text-main-500 dark:text-main-400 max-h-4 flex items-center">View:</span>
+        <div className="flex gap-0.5">
+          <Button
+            onClick={() => {
+              setViewMode && setViewMode('single');
+              setSingleCamera && setSingleCamera('front');
+            }}
+            active={viewMode === 'single' && singleCamera === 'front'}
+            className="px-1 text-sm font-medium max-h-4"
+          >
+            Front
+          </Button>
+          <Button
+            onClick={() => {
+              setViewMode && setViewMode('single');
+              setSingleCamera && setSingleCamera('back');
+            }}
+            active={viewMode === 'single' && singleCamera === 'back'}
+            className="px-1 text-sm font-medium max-h-4"
+          >
+            Back
+          </Button>
+          <Button
+            onClick={() => setViewMode && setViewMode('both')}
+            active={viewMode === 'both'}
+            className="px-1 text-sm font-medium max-h-4"
+          >
+            Both
+          </Button>
+        </div>
+      </div>
 
       {!forceFPS && (
         <div className="flex-4 flex gap-1 items-center">
