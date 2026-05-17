@@ -8,6 +8,7 @@ import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { robotClient } from '@/lib/robotAPIClient';
 import { useVideoStream, useFrameDataUrl } from '@/hooks/useRobot';
+import type { VideoCamera } from '@/lib/robotAPIClient';
 
 interface BallDistanceCalibrationModalProps {
   onClose: () => void;
@@ -17,11 +18,12 @@ export const BallDistanceCalibrationModal: React.FC<BallDistanceCalibrationModal
   onClose,
 }) => {
   const [knownDistance, setKnownDistance] = useState('200');
+  const [camera, setCamera] = useState<VideoCamera>('front');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
 
-  const { frame } = useVideoStream(true, 15, true);
+  const { frame } = useVideoStream(true, 15, true, camera);
   const frameUrl = useFrameDataUrl(frame);
 
   const handleCalibrate = async () => {
@@ -37,10 +39,14 @@ export const BallDistanceCalibrationModal: React.FC<BallDistanceCalibrationModal
       setError(null);
       setSuccess(null);
 
-      const result = await robotClient.calibrateBallDistance(distance);
+      const result = await robotClient.calibrateBallDistance(distance, camera);
 
       if (result) {
-        setSuccess(`Calibration successful! Constant: ${result.calibration_constant}`);
+        if ('camera' in result && result.camera === 'both') {
+          setSuccess('Calibration successful for both cameras');
+        } else if ('calibration_constant' in result) {
+          setSuccess(`Calibration successful! Constant: ${result.calibration_constant}`);
+        }
         setTimeout(() => {
           onClose();
         }, 2000);
@@ -66,6 +72,17 @@ export const BallDistanceCalibrationModal: React.FC<BallDistanceCalibrationModal
           <li>Enter the exact distance in millimeters</li>
           <li>Click Calibrate</li>
         </ol>
+      </div>
+
+      <div className="space-y-2">
+        <label className="block text-xs font-bold text-main-900 dark:text-white">
+          Camera
+        </label>
+        <div className="grid grid-cols-3 gap-1">
+          <Button onClick={() => setCamera('front')} active={camera === 'front'} className="text-xs">Front</Button>
+          <Button onClick={() => setCamera('back')} active={camera === 'back'} className="text-xs">Back</Button>
+          <Button onClick={() => setCamera('both')} active={camera === 'both'} className="text-xs">Both</Button>
+        </div>
       </div>
 
       <div className="space-y-2">

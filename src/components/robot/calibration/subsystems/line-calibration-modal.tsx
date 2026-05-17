@@ -67,14 +67,12 @@ export const LineCalibrationModal: React.FC<LineCalibrationModalProps> = ({ onCl
     try {
       const status = await robotClient.getLineCalibrationStatus();
       if (status) {
+        const currentThresholds = status.thresholds || [];
         setManualData({
-          current_thresholds: status.current_thresholds || [],
-          phase1_min: status.phase1_min,
-          phase1_max: status.phase1_max,
-          phase2_min: status.phase2_min,
-          phase2_max: status.phase2_max,
+          current_thresholds: currentThresholds,
+          phase1_min: status.min_values,
+          phase1_max: status.max_values,
         });
-        const currentThresholds = status.current_thresholds || [];
         setThresholds(currentThresholds);
         setEnabledSensors(new Array(currentThresholds.length).fill(true));
       }

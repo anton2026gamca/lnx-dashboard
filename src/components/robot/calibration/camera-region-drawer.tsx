@@ -13,6 +13,7 @@ import { DrawRegion, HSVRange, Region } from '@/types/calibration';
 import { HSVPicker } from '@/components/ui/HSV-picker';
 import { CanvasRegionDrawer } from '@/components/ui/canvas-region-drawer';
 import { VideoFeedSettings } from '../dashboard/camera-panel/video-feed-settings';
+import type { VideoCamera } from '@/lib/robotAPIClient';
 
 const RegionListItem: React.FC<{ region: DrawRegion; index: number; onChange: (newVal: HSVRange) => void, onDelete: () => void, onReset: () => void }> = ({ region, index, onChange, onDelete, onReset }) => {
   const [expanded, setExpanded] = useState(false);
@@ -221,6 +222,7 @@ interface CameraRegionDrawerProps {
   onClear: () => void;
   regions: DrawRegion[];
   showRegionsOnCanvas?: boolean;
+  selectedCamera?: VideoCamera;
 }
 
 export const CameraRegionDrawer: React.FC<CameraRegionDrawerProps> = ({
@@ -229,6 +231,7 @@ export const CameraRegionDrawer: React.FC<CameraRegionDrawerProps> = ({
   onClear,
   regions,
   showRegionsOnCanvas = false,
+  selectedCamera = 'front',
 }) => {
   const [error, setError] = useState<string | null>(null);
 
@@ -240,7 +243,16 @@ export const CameraRegionDrawer: React.FC<CameraRegionDrawerProps> = ({
   const [zoomPos, setZoomPos] = useState<{ x: number; y: number } | null>(null);
   const [isShiftOrCtrlPressed, setIsShiftOrCtrlPressed] = useState(false);
 
-  const { frame, refresh } = useVideoStream(true, fps, false);
+  const [viewCamera, setViewCamera] = useState<'front' | 'back'>(selectedCamera === 'back' ? 'back' : 'front');
+
+  useEffect(() => {
+    if (selectedCamera !== 'both') {
+      setViewCamera(selectedCamera);
+    }
+  }, [selectedCamera]);
+
+  const hsvSourceCamera: 'front' | 'back' = selectedCamera === 'both' ? viewCamera : selectedCamera;
+  const { frame, refresh } = useVideoStream(true, fps, false, hsvSourceCamera);
   const frameUrl = useFrameDataUrl(frame);
 
   useEffect(() => {
@@ -321,43 +333,48 @@ export const CameraRegionDrawer: React.FC<CameraRegionDrawerProps> = ({
 
       const hsvData = await robotClient.computeHsvFromRegions([
         { x: Math.round(x), y: Math.round(y), width: Math.round(width), height: Math.round(height) },
-      ]);
+      ], hsvSourceCamera);
 
       if (hsvData) {
-        const cameraImage = frameUrl;
-        
-        const newRegion: DrawRegion = {
-          id: `region-${Date.now()}`,
-          x: Math.round(x),
-          y: Math.round(y),
-          width: Math.round(width),
-          height: Math.round(height),
-          hsv: {
-            h_min: hsvData.lower[0],
-            h_max: hsvData.upper[0],
-            s_min: hsvData.lower[1],
-            s_max: hsvData.upper[1],
-            v_min: hsvData.lower[2],
-            v_max: hsvData.upper[2],
-          },
-          originalHsv: {
-            h_min: hsvData.lower[0],
-            h_max: hsvData.upper[0],
-            s_min: hsvData.lower[1],
-            s_max: hsvData.upper[1],
-            v_min: hsvData.lower[2],
-            v_max: hsvData.upper[2],
-          },
-          cameraImage,
-          canvas: {
-            x: region.x,
-            y: region.y,
-            width: region.width,
-            height: region.height,
-          }
-        };
+        if (!('camera' in hsvData)) {
+          const cameraImage = frameUrl;
+          
+          const newRegion: DrawRegion = {
+            id: `region-${Date.now()}`,
+            x: Math.round(x),
+            y: Math.round(y),
+            width: Math.round(width),
+            height: Math.round(height),
+            hsv: {
+              h_min: hsvData.lower[0],
+              h_max: hsvData.upper[0],
+              s_min: hsvData.lower[1],
+              s_max: hsvData.upper[1],
+              v_min: hsvData.lower[2],
+              v_max: hsvData.upper[2],
+            },
+            originalHsv: {
+              h_min: hsvData.lower[0],
+              h_max: hsvData.upper[0],
+              s_min: hsvData.lower[1],
+              s_max: hsvData.upper[1],
+              v_min: hsvData.lower[2],
+              v_max: hsvData.upper[2],
+            },
+            cameraImage,
+            canvas: {
+              x: region.x,
+              y: region.y,
+              width: region.width,
+              height: region.height,
+            }
+          };
 
-        onRegionAdded(newRegion);
+          onRegionAdded(newRegion);
+          return;
+        }
+
+        setError('Failed to compute HSV range for selected camera');
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to add region');
@@ -391,9 +408,6 @@ export const CameraRegionDrawer: React.FC<CameraRegionDrawerProps> = ({
   const handleDeleteRegion = (index: number) => () => {
     const region = regions[index];
     if (!region) return;
-    
-    const updatedRegions = [...regions];
-    updatedRegions.splice(index, 1);
 
     onRegionChanged(index, null);
   }
@@ -404,8 +418,13 @@ export const CameraRegionDrawer: React.FC<CameraRegionDrawerProps> = ({
         <VideoFeedSettings
           fps={fps}
           setFps={setFps}
+          viewMode="single"
+          singleCamera={viewCamera}
+          setSingleCamera={setViewCamera}
           refresh={refresh}
           forceEnabled={true}
+          showViewControls={selectedCamera === 'both'}
+          allowBothViewOption={false}
         />
         <div 
           ref={imageContainerRef}

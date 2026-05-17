@@ -6,6 +6,7 @@ import { io, Socket } from 'socket.io-client';
 import { RobotConnection, RobotMode, SensorData, MotorSettings, GoalSettings, AutonomousSettings, LogsBatch, DetectedObject, PositionEstimate, GoalDetectionData, BluetoothState, BluetoothDevice, OtherRobotInfo, BluetoothMessage, BluetoothPairableDevice } from '@/types/robot';
 
 export type VideoCamera = 'front' | 'back' | 'both';
+type SingleVideoCamera = Exclude<VideoCamera, 'both'>;
 
 export class RobotAPIClient {
   private socket: Socket | null = null;
@@ -190,6 +191,20 @@ export class RobotAPIClient {
     return null;
   }
 
+  private normalizeCameraAndRobotArgs(
+    arg1?: string | VideoCamera,
+    arg2?: VideoCamera,
+    defaultCamera: VideoCamera = 'front',
+  ): { robotId?: string; camera: VideoCamera } {
+    if (arg1 === 'front' || arg1 === 'back' || arg1 === 'both') {
+      return { camera: arg1 };
+    }
+    if (arg2 === 'front' || arg2 === 'back' || arg2 === 'both') {
+      return { robotId: arg1, camera: arg2 };
+    }
+    return { robotId: arg1, camera: defaultCamera };
+  }
+
   // ============ Query Methods ============
 
   /**
@@ -246,17 +261,48 @@ export class RobotAPIClient {
   }
 
   /**
-   * Get goal color calibration ranges for a specific camera
+   * Get goal color calibration ranges for a specific camera or both cameras.
    * @param camera - Camera to get calibration for (default: "front")
    */
+  async getGoalColorCalibration(camera: VideoCamera, robotId?: string): Promise<{ camera: 'front' | 'back'; yellow_ranges: Array<{ lower: [number, number, number]; upper: [number, number, number] }>; blue_ranges: Array<{ lower: [number, number, number]; upper: [number, number, number] }>; } | { camera: 'both'; front: { yellow_ranges: Array<{ lower: [number, number, number]; upper: [number, number, number] }>; blue_ranges: Array<{ lower: [number, number, number]; upper: [number, number, number] }>; } | null; back: { yellow_ranges: Array<{ lower: [number, number, number]; upper: [number, number, number] }>; blue_ranges: Array<{ lower: [number, number, number]; upper: [number, number, number] }>; } | null } | null>;
+  async getGoalColorCalibration(camera: 'front' | 'back', robotId?: string): Promise<{ camera: 'front' | 'back'; yellow_ranges: Array<{ lower: [number, number, number]; upper: [number, number, number] }>; blue_ranges: Array<{ lower: [number, number, number]; upper: [number, number, number] }>; } | null>;
+  async getGoalColorCalibration(camera: 'both', robotId?: string): Promise<{ camera: 'both'; front: { yellow_ranges: Array<{ lower: [number, number, number]; upper: [number, number, number] }>; blue_ranges: Array<{ lower: [number, number, number]; upper: [number, number, number] }>; } | null; back: { yellow_ranges: Array<{ lower: [number, number, number]; upper: [number, number, number] }>; blue_ranges: Array<{ lower: [number, number, number]; upper: [number, number, number] }>; } | null } | null>;
   async getGoalColorCalibration(
-    camera: Exclude<VideoCamera, 'both'> = 'front',
+    camera: VideoCamera = 'front',
     robotId?: string,
-  ): Promise<{
-    yellow_ranges: Array<{ lower: [number, number, number]; upper: [number, number, number] }>;
-    blue_ranges: Array<{ lower: [number, number, number]; upper: [number, number, number] }>;
-  } | null> {
-    return this._emit('get_goal_color_calibration', { camera }, robotId);
+  ): Promise<
+    | {
+        camera: 'front' | 'back';
+        yellow_ranges: Array<{ lower: [number, number, number]; upper: [number, number, number] }>;
+        blue_ranges: Array<{ lower: [number, number, number]; upper: [number, number, number] }>;
+      }
+    | {
+        camera: 'both';
+        front: { yellow_ranges: Array<{ lower: [number, number, number]; upper: [number, number, number] }>; blue_ranges: Array<{ lower: [number, number, number]; upper: [number, number, number] }>; } | null;
+        back: { yellow_ranges: Array<{ lower: [number, number, number]; upper: [number, number, number] }>; blue_ranges: Array<{ lower: [number, number, number]; upper: [number, number, number] }>; } | null;
+      }
+    | null
+  > {
+    if (camera === 'both') {
+      const [front, back] = await Promise.all([
+        this._emit('get_goal_color_calibration', { camera: 'front' }, robotId),
+        this._emit('get_goal_color_calibration', { camera: 'back' }, robotId),
+      ]);
+      return {
+        camera: 'both',
+        front: (front as any) || null,
+        back: (back as any) || null,
+      };
+    }
+    const response = await this._emit('get_goal_color_calibration', { camera }, robotId);
+    if (!response) {
+      return null;
+    }
+    return {
+      camera: camera as 'front' | 'back',
+      yellow_ranges: (response as any).yellow_ranges || [],
+      blue_ranges: (response as any).blue_ranges || [],
+    };
   }
 
   /**
@@ -559,35 +605,66 @@ export class RobotAPIClient {
   }
 
   /**
-   * Calibrate ball detection distance
+   * Calibrate ball detection distance for one or both cameras.
    * @param knownDistanceMm - Known distance in millimeters
+   * @param robotId - Optional robot id
    * @param camera - Camera to calibrate (default: "front")
    */
+  async calibrateBallDistance(knownDistanceMm: number): Promise<{ calibration_constant: number } | null>;
+  async calibrateBallDistance(knownDistanceMm: number, camera: VideoCamera): Promise<{ calibration_constant: number } | { camera: 'both'; front?: { calibration_constant?: number } | null; back?: { calibration_constant?: number } | null } | null>;
+  async calibrateBallDistance(knownDistanceMm: number, robotId: string, camera?: VideoCamera): Promise<{ calibration_constant: number } | { camera: 'both'; front?: { calibration_constant?: number } | null; back?: { calibration_constant?: number } | null } | null>;
   async calibrateBallDistance(
     knownDistanceMm: number,
-    robotId?: string,
-    camera: Exclude<VideoCamera, 'both'> = 'front',
-  ): Promise<{ calibration_constant: number } | null> {
-    return this._emit('camera_ball_distance_calibration', { known_distance_mm: knownDistanceMm, camera }, robotId);
+    robotIdOrCamera?: string | VideoCamera,
+    camera?: VideoCamera,
+  ): Promise<
+    | { calibration_constant: number }
+    | { camera: 'both'; front?: { calibration_constant?: number } | null; back?: { calibration_constant?: number } | null }
+    | null
+  > {
+    const normalized = this.normalizeCameraAndRobotArgs(robotIdOrCamera, camera, 'front');
+    if (camera === 'both') {
+      const [front, back] = await Promise.all([
+        this._emit('camera_ball_distance_calibration', { known_distance_mm: knownDistanceMm, camera: 'front' }, normalized.robotId),
+        this._emit('camera_ball_distance_calibration', { known_distance_mm: knownDistanceMm, camera: 'back' }, normalized.robotId),
+      ]);
+      return {
+        camera: 'both',
+        front: (front as any) || null,
+        back: (back as any) || null,
+      };
+    }
+    return this._emit('camera_ball_distance_calibration', { known_distance_mm: knownDistanceMm, camera: normalized.camera }, normalized.robotId);
   }
 
   /**
-   * Start goal distance calibration
+   * Start goal distance calibration for one or both cameras.
    * @param initialDistance - Initial distance in mm (default 200)
    * @param lineDistance - Line distance in mm (default 200)
+   * @param robotId - Optional robot id
    * @param camera - Camera to use (default: "front")
    */
+  async startGoalDistanceCalibration(initialDistance?: number, lineDistance?: number, robotId?: string, camera?: VideoCamera): Promise<void>;
+  async startGoalDistanceCalibration(initialDistance?: number, lineDistance?: number, camera?: VideoCamera): Promise<void>;
   async startGoalDistanceCalibration(
     initialDistance: number = 200,
     lineDistance: number = 200,
-    robotId?: string,
-    camera: Exclude<VideoCamera, 'both'> = 'front',
+    robotIdOrCamera?: string | VideoCamera,
+    camera?: VideoCamera,
   ): Promise<void> {
+    const normalized = this.normalizeCameraAndRobotArgs(robotIdOrCamera, camera, 'front');
+    if (normalized.camera === 'both') {
+      await Promise.all([
+        this._emit('start_goal_distance_calibration', { initial_distance: initialDistance, line_distance: lineDistance, camera: 'front' }, normalized.robotId),
+        this._emit('start_goal_distance_calibration', { initial_distance: initialDistance, line_distance: lineDistance, camera: 'back' }, normalized.robotId),
+      ]);
+      return;
+    }
     await this._emit('start_goal_distance_calibration', {
       initial_distance: initialDistance,
       line_distance: lineDistance,
-      camera,
-    }, robotId);
+      camera: normalized.camera,
+    }, normalized.robotId);
   }
 
   /**
@@ -628,7 +705,7 @@ export class RobotAPIClient {
    * @param camera - Camera to get focal length for (default: "front")
    */
   async getGoalFocalLength(
-    camera: Exclude<VideoCamera, 'both'> = 'front',
+    camera: SingleVideoCamera = 'front',
     robotId?: string,
   ): Promise<{ focal_length_pixels: number; camera: 'front' | 'back' } | null> {
     return this._emit('get_goal_focal_length', { camera }, robotId);
@@ -648,19 +725,36 @@ export class RobotAPIClient {
   }
 
   /**
-   * Compute HSV values from image regions
+   * Compute HSV values from image regions for one or both cameras.
    * @param regions - Array of regions with x, y, width, height
+   * @param robotId - Optional robot id
    * @param camera - Camera to capture from (default: "front")
    */
+  async computeHsvFromRegions(regions: Array<{x: number; y: number; width: number; height: number}>): Promise<{ lower: [number, number, number]; upper: [number, number, number] } | null>;
+  async computeHsvFromRegions(regions: Array<{x: number; y: number; width: number; height: number}>, camera: VideoCamera): Promise<{ lower: [number, number, number]; upper: [number, number, number] } | { camera: 'both'; front?: { lower: [number, number, number]; upper: [number, number, number] } | null; back?: { lower: [number, number, number]; upper: [number, number, number] } | null } | null>;
+  async computeHsvFromRegions(regions: Array<{x: number; y: number; width: number; height: number}>, robotId: string, camera?: VideoCamera): Promise<{ lower: [number, number, number]; upper: [number, number, number] } | { camera: 'both'; front?: { lower: [number, number, number]; upper: [number, number, number] } | null; back?: { lower: [number, number, number]; upper: [number, number, number] } | null } | null>;
   async computeHsvFromRegions(
     regions: Array<{x: number; y: number; width: number; height: number}>,
-    robotId?: string,
-    camera: Exclude<VideoCamera, 'both'> = 'front',
-  ): Promise<{
-    lower: [number, number, number];
-    upper: [number, number, number];
-  } | null> {
-    return this._emit('compute_hsv_from_regions', { camera, regions }, robotId);
+    robotIdOrCamera?: string | VideoCamera,
+    camera?: VideoCamera,
+  ): Promise<
+    | { lower: [number, number, number]; upper: [number, number, number] }
+    | { camera: 'both'; front?: { lower: [number, number, number]; upper: [number, number, number] } | null; back?: { lower: [number, number, number]; upper: [number, number, number] } | null }
+    | null
+  > {
+    const normalized = this.normalizeCameraAndRobotArgs(robotIdOrCamera, camera, 'front');
+    if (normalized.camera === 'both') {
+      const [front, back] = await Promise.all([
+        this._emit('compute_hsv_from_regions', { camera: 'front', regions }, normalized.robotId),
+        this._emit('compute_hsv_from_regions', { camera: 'back', regions }, normalized.robotId),
+      ]);
+      return {
+        camera: 'both',
+        front: (front as any) || null,
+        back: (back as any) || null,
+      };
+    }
+    return this._emit('compute_hsv_from_regions', { camera: normalized.camera, regions }, normalized.robotId);
   }
 
   /**
@@ -686,20 +780,97 @@ export class RobotAPIClient {
   }
 
   /**
-   * Get ball color calibration
+   * Get ball color calibration for one or both cameras.
    * @param camera - Camera to get calibration for (default: "front")
    */
   async getBallColorCalibration(
-    camera: Exclude<VideoCamera, 'both'> = 'front',
+    camera: VideoCamera = 'front',
     robotId?: string,
-  ): Promise<{
-    camera: 'front' | 'back';
-    ranges: Array<{
-      lower: [number, number, number];
-      upper: [number, number, number];
-    }>;
-  } | null> {
-    return this._emit('get_ball_calibration', { camera }, robotId);
+  ): Promise<
+    | { camera: 'front' | 'back'; ranges: Array<{ lower: [number, number, number]; upper: [number, number, number] }> }
+    | { camera: 'both'; front: { camera: 'front'; ranges: Array<{ lower: [number, number, number]; upper: [number, number, number] }> } | null; back: { camera: 'back'; ranges: Array<{ lower: [number, number, number]; upper: [number, number, number] }> } | null }
+    | null
+  > {
+    if (camera === 'both') {
+      const [front, back] = await Promise.all([
+        this._emit('get_ball_calibration', { camera: 'front' }, robotId),
+        this._emit('get_ball_calibration', { camera: 'back' }, robotId),
+      ]);
+      return {
+        camera: 'both',
+        front: (front as any) || null,
+        back: (back as any) || null,
+      };
+    }
+    const response = await this._emit('get_ball_calibration', { camera }, robotId);
+    if (!response) {
+      return null;
+    }
+    const resp: any = response;
+    return {
+      camera: resp.camera || (camera as 'front' | 'back'),
+      ranges: resp.ranges || [],
+    };
+  }
+
+  /**
+   * Get combined calibration information (goal + ball color) for the given camera setting.
+   * If `camera` is "both" both front and back calibrations are returned.
+   */
+  async getCameraCalibration(
+    camera: VideoCamera = 'front',
+    robotId?: string,
+  ): Promise<
+    | {
+        camera: SingleVideoCamera;
+        goal: { camera: SingleVideoCamera; yellow_ranges: Array<{ lower: [number, number, number]; upper: [number, number, number] }>; blue_ranges: Array<{ lower: [number, number, number]; upper: [number, number, number] }> } | null;
+        ball: { camera: SingleVideoCamera; ranges: Array<{ lower: [number, number, number]; upper: [number, number, number] }> } | null;
+      }
+    | {
+        camera: 'both';
+        front: {
+          goal: { yellow_ranges: Array<{ lower: [number, number, number]; upper: [number, number, number] }>; blue_ranges: Array<{ lower: [number, number, number]; upper: [number, number, number] }> } | null;
+          ball: { camera: 'front'; ranges: Array<{ lower: [number, number, number]; upper: [number, number, number] }> } | null;
+        };
+        back: {
+          goal: { yellow_ranges: Array<{ lower: [number, number, number]; upper: [number, number, number] }>; blue_ranges: Array<{ lower: [number, number, number]; upper: [number, number, number] }> } | null;
+          ball: { camera: 'back'; ranges: Array<{ lower: [number, number, number]; upper: [number, number, number] }> } | null;
+        };
+      }
+    | null
+  > {
+    if (camera === 'both') {
+      const [goal, ball] = await Promise.all([
+        this.getGoalColorCalibration('both', robotId),
+        this.getBallColorCalibration('both', robotId),
+      ]);
+      const goalBoth = goal && goal.camera === 'both' ? goal : null;
+      const ballBoth = ball && ball.camera === 'both' ? ball : null;
+      return {
+        camera: 'both',
+        front: {
+          goal: goalBoth?.front || null,
+          ball: ballBoth?.front || null,
+        },
+        back: {
+          goal: goalBoth?.back || null,
+          ball: ballBoth?.back || null,
+        },
+      };
+    }
+
+    const [goal, ball] = await Promise.all([
+      this.getGoalColorCalibration(camera, robotId),
+      this.getBallColorCalibration(camera, robotId),
+    ]);
+    const goalSingle = goal && goal.camera !== 'both' ? goal : null;
+    const ballSingle = ball && ball.camera !== 'both' ? ball : null;
+
+    return {
+      camera,
+      goal: goalSingle,
+      ball: ballSingle,
+    };
   }
 
   /**

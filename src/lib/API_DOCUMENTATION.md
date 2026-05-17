@@ -413,7 +413,7 @@ Get detected objects, optionally filtered by camera.
       width: number,
       height: number,
       confidence: number,
-      color: [number, number, number],
+      color: [number, number, number], // [B, G, R]
       camera: "front" | "back" | null
     }>,
     back?: Array<{
@@ -423,7 +423,7 @@ Get detected objects, optionally filtered by camera.
       width: number,
       height: number,
       confidence: number,
-      color: [number, number, number],
+      color: [number, number, number], // [B, G, R]
       camera: "front" | "back" | null
     }>
   }

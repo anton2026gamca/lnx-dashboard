@@ -8,6 +8,7 @@ import { useEffect, useCallback, useState } from 'react';
 import { robotClient } from '@/lib/robotAPIClient';
 import { useRobot } from '@/context/RobotContext';
 import { LineCalibrationStatus, GoalDistanceCalibrationStatus } from '@/types/calibration';
+import type { VideoCamera } from '@/lib/robotAPIClient';
 
 /**
  * Hook for line sensor calibration
@@ -116,14 +117,14 @@ export const useGoalDistanceCalibration = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const start = useCallback(async (initialDistance: number, lineDistance: number) => {
+  const start = useCallback(async (initialDistance: number, lineDistance: number, camera: VideoCamera = 'front') => {
     if (!connectionState.isConnected) return;
 
     try {
       setLoading(true);
       setError(null);
       setIsActive(true);
-      await robotClient.startGoalDistanceCalibration(initialDistance, lineDistance);
+      await robotClient.startGoalDistanceCalibration(initialDistance, lineDistance, camera);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to start calibration');
       setIsActive(false);

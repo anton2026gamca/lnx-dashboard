@@ -12,6 +12,7 @@ import { useRobotMode } from '@/hooks/useRobot';
 import { ModeComponent } from '@/components/robot/dashboard/control-panel/mode-component';
 import { ManualMovementComponent, SettingsComponent } from '../../dashboard/control-panel';
 import { robotClient } from '@/lib/robotAPIClient';
+import type { VideoCamera } from '@/lib/robotAPIClient';
 
 interface GoalDistanceCalibrationModalProps {
   onClose: () => void;
@@ -24,12 +25,13 @@ export const GoalDistanceCalibrationModal: React.FC<GoalDistanceCalibrationModal
   const [initialDistance, setInitialDistance] = useState('200');
   const [lineDistance, setLineDistance] = useState('200');
   const [calibrationStarted, setCalibrationStarted] = useState(false);
+  const [camera, setCamera] = useState<VideoCamera>('front');
   const [focalLength, setFocalLength] = useState('');
   const [settingFocalLength, setSettingFocalLength] = useState(false);
   const [focalLengthError, setFocalLengthError] = useState('');
   const [focalLengthSuccess, setFocalLengthSuccess] = useState('');
 
-  const { frame } = useVideoStream(true, 15, true);
+  const { frame } = useVideoStream(true, 15, true, camera);
   const frameUrl = useFrameDataUrl(frame);
 
   const handleStartCalibration = async () => {
@@ -41,7 +43,7 @@ export const GoalDistanceCalibrationModal: React.FC<GoalDistanceCalibrationModal
     }
 
     try {
-      await start(initDist, lineDist);
+      await start(initDist, lineDist, camera);
       setCalibrationStarted(true);
     } catch (err) {
       console.error('Failed to start calibration:', err);
@@ -82,7 +84,7 @@ export const GoalDistanceCalibrationModal: React.FC<GoalDistanceCalibrationModal
     setFocalLengthSuccess('');
 
     try {
-      await robotClient.setGoalFocalLength(focalLengthValue);
+      await robotClient.setGoalFocalLength(focalLengthValue, undefined, camera);
       setFocalLengthSuccess(`Focal length set to ${focalLengthValue}`);
       setFocalLength('');
     } catch (err) {
@@ -133,6 +135,17 @@ export const GoalDistanceCalibrationModal: React.FC<GoalDistanceCalibrationModal
           <div className="border-t border-main-300 dark:border-main-800"></div>
 
           <div className="space-y-2">
+            <div className="space-y-1">
+              <label className="block text-xs font-bold text-main-900 dark:text-white">
+                Camera
+              </label>
+              <div className="grid grid-cols-3 gap-1">
+                <Button onClick={() => setCamera('front')} active={camera === 'front'} className="text-xs">Front</Button>
+                <Button onClick={() => setCamera('back')} active={camera === 'back'} className="text-xs">Back</Button>
+                <Button onClick={() => setCamera('both')} active={camera === 'both'} className="text-xs">Both</Button>
+              </div>
+            </div>
+
             <div className="flex gap-2">
               <input
                 type="number"

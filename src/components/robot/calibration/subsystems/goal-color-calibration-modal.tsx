@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button';
 import { robotClient } from '@/lib/robotAPIClient';
 import { ColorCalibrationWorkflow } from './color-calibration-workflow';
 import { DrawRegion } from '@/types/calibration';
-import { GoalSettings } from '@/types/robot';
+import type { VideoCamera } from '@/lib/robotAPIClient';
 
 interface GoalColorCalibrationModalProps {
   onClose: () => void;
@@ -17,6 +17,7 @@ interface GoalColorCalibrationModalProps {
 
 export const GoalColorCalibrationModal: React.FC<GoalColorCalibrationModalProps> = ({ onClose }) => {
   const [selectedColor, setSelectedColor] = useState<'yellow' | 'blue' | null>(null);
+  const [camera, setCamera] = useState<VideoCamera>('front');
   const [regions, setRegions] = useState<{ yellow: DrawRegion[]; blue: DrawRegion[] }>({
     yellow: [],
     blue: [],
@@ -63,32 +64,82 @@ export const GoalColorCalibrationModal: React.FC<GoalColorCalibrationModalProps>
       setLoading(true);
       const color = selectedColor!;
 
-      const calibrationData: GoalSettings = { calibration: {} };
-      if (color === 'yellow') {
-        calibrationData.calibration = { yellow: { ranges: [] } };
-        for (const region of regions.yellow) {
-          calibrationData.calibration?.yellow?.ranges?.push({
-            lower: [region.hsv!.h_min, region.hsv!.s_min, region.hsv!.v_min] as [number, number, number],
-            upper: [region.hsv!.h_max, region.hsv!.s_max, region.hsv!.v_max] as [number, number, number],
-          });
-        }
-      } else if (color === 'blue') {
-        calibrationData.calibration = { blue: { ranges: [] } };
-        for (const region of regions.blue) {
-          calibrationData.calibration?.blue?.ranges?.push({
-            lower: [region.hsv!.h_min, region.hsv!.s_min, region.hsv!.v_min] as [number, number, number],
-            upper: [region.hsv!.h_max, region.hsv!.s_max, region.hsv!.v_max] as [number, number, number],
-          });
-        }
-      }
+      const colorRanges = regions[color].map((region) => ({
+        lower: [region.hsv!.h_min, region.hsv!.s_min, region.hsv!.v_min] as [number, number, number],
+        upper: [region.hsv!.h_max, region.hsv!.s_max, region.hsv!.v_max] as [number, number, number],
+      }));
 
-      await robotClient.setGoalSettings(calibrationData);
+      await robotClient.setGoalColorCalibration(
+        camera,
+        color === 'yellow' ? colorRanges : undefined,
+        color === 'blue' ? colorRanges : undefined,
+      );
 
       setSelectedColor(null);
       setRegions({ yellow: [], blue: [] });
       onClose();
     } catch (err) {
       setWorkflowError(err instanceof Error ? err.message : 'Failed to apply settings');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleLoadCurrentCalibration = async () => {
+    if (!selectedColor) {
+      return;
+    }
+
+    try {
+      setWorkflowError(null);
+      setLoading(true);
+
+      const calibration = await robotClient.getGoalColorCalibration(camera);
+      if (!calibration) {
+        setRegions((prev) => ({ ...prev, [selectedColor]: [] }));
+        return;
+      }
+
+      const extractedRanges =
+        calibration.camera === 'both'
+          ? [
+              ...(calibration.front?.[`${selectedColor}_ranges`] ?? []),
+              ...(calibration.back?.[`${selectedColor}_ranges`] ?? []),
+            ]
+          : calibration[`${selectedColor}_ranges`];
+
+      const uniqueRanges = Array.from(new Map(
+        extractedRanges.map((range) => [JSON.stringify(range), range]),
+      ).values());
+
+      setRegions((prev) => ({
+        ...prev,
+        [selectedColor]: uniqueRanges.map((range, index) => ({
+          id: `current-${selectedColor}-${camera}-${index}`,
+          x: 0,
+          y: 0,
+          width: 0,
+          height: 0,
+          hsv: {
+            h_min: range.lower[0],
+            s_min: range.lower[1],
+            v_min: range.lower[2],
+            h_max: range.upper[0],
+            s_max: range.upper[1],
+            v_max: range.upper[2],
+          },
+          originalHsv: {
+            h_min: range.lower[0],
+            s_min: range.lower[1],
+            v_min: range.lower[2],
+            h_max: range.upper[0],
+            s_max: range.upper[1],
+            v_max: range.upper[2],
+          },
+        })),
+      }));
+    } catch (err) {
+      setWorkflowError(err instanceof Error ? err.message : 'Failed to load current calibration');
     } finally {
       setLoading(false);
     }
@@ -134,6 +185,9 @@ export const GoalColorCalibrationModal: React.FC<GoalColorCalibrationModalProps>
             title={`${selectedColor.charAt(0).toUpperCase() + selectedColor.slice(1)} Goal Calibration`}
             loading={loading}
             error={workflowError}
+            camera={camera}
+            onCameraChange={setCamera}
+            onLoadCurrentCalibration={handleLoadCurrentCalibration}
           />
         </div>
       )}

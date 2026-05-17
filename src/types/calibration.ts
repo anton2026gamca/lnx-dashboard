@@ -39,7 +39,7 @@ export interface LineCalibrationStatus {
 
 export interface GoalDistanceCalibrationStatus {
   active: boolean;
-  phase: 'waiting' | 'driving';
+  phase: 'waiting' | 'initial' | 'driving';
   initial_height_pixels?: number;
   line_height_pixels?: number;
 }
@@ -63,4 +63,3 @@ export interface DrawRegion {
   originalHsv?: HSVRange;
   cameraImage?: string;
 }
-

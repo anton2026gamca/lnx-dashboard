@@ -12,6 +12,7 @@ import { HSVPicker } from '@/components/ui/HSV-picker';
 import { DrawRegion, HSVRange } from '@/types/calibration';
 import { Eye, EyeOff, Download, Upload } from 'lucide-react';
 import { ManualMovementComponent, ModeComponent, SettingsComponent } from '../../dashboard/control-panel';
+import type { VideoCamera } from '@/lib/robotAPIClient';
 
 interface ColorCalibrationWorkflowProps {
   regions: DrawRegion[];
@@ -23,6 +24,9 @@ interface ColorCalibrationWorkflowProps {
   title: string;
   loading?: boolean;
   error?: string | null;
+  camera: VideoCamera;
+  onCameraChange: (camera: VideoCamera) => void;
+  onLoadCurrentCalibration?: () => Promise<void>;
 }
 
 // Helper functions for CSV export/import
@@ -92,6 +96,9 @@ export const ColorCalibrationWorkflow: React.FC<ColorCalibrationWorkflowProps> =
   title,
   loading = false,
   error = null,
+  camera,
+  onCameraChange,
+  onLoadCurrentCalibration,
 }) => {
   const [step, setStep] = useState<'regions' | 'preview'>('regions');
   const [disabledRegionsStep2, setDisabledRegionsStep2] = useState<Array<number>>([]);
@@ -174,6 +181,11 @@ export const ColorCalibrationWorkflow: React.FC<ColorCalibrationWorkflowProps> =
   return (
     <div className="space-y-2">
       <h3 className="text-sm font-bold text-main-900 dark:text-white">{title}</h3>
+      <div className="flex gap-1">
+        <Button onClick={() => onCameraChange('front')} active={camera === 'front'} className="flex-1 text-xs">Front</Button>
+        <Button onClick={() => onCameraChange('back')} active={camera === 'back'} className="flex-1 text-xs">Back</Button>
+        <Button onClick={() => onCameraChange('both')} active={camera === 'both'} className="flex-1 text-xs">Both</Button>
+      </div>
 
       {step === 'regions' ? (
         <>
@@ -189,6 +201,7 @@ export const ColorCalibrationWorkflow: React.FC<ColorCalibrationWorkflowProps> =
               onRegionChanged={handleRegionChanged}
               onClear={handleClear}
               regions={regions}
+              selectedCamera={camera}
             />
 
             <div className="flex gap-1">
@@ -214,6 +227,14 @@ export const ColorCalibrationWorkflow: React.FC<ColorCalibrationWorkflowProps> =
                 <Upload size={14} className="mr-1" />
                 Import
               </Button>
+              {onLoadCurrentCalibration && (
+                <Button
+                  onClick={onLoadCurrentCalibration}
+                  className="flex-1 text-xs"
+                >
+                  Load Current
+                </Button>
+              )}
               <input
                 ref={fileInputRef}
                 type="file"
