@@ -850,6 +850,36 @@ Calibrate ball distance detection. Place ball at a known distance and call this 
 }
 ```
 
+### `camera_auto_calibration`
+
+Temporarily enable camera AWB and AE so the camera can adapt to current lighting, then disable both again and copy the learned values to all other cameras.
+
+**Request:**
+```typescript
+{
+  event: "camera_auto_calibration",
+  data: {
+    camera?: "front" | "back", // Default: "front"
+    settle_time_s?: number              // Seconds to keep AWB/AE enabled (default: 2.0)
+  }
+}
+```
+
+**Response:**
+```typescript
+{
+  status: "ok" | "error",
+  camera?: "front" | "back" | "both",
+  result?: {
+    color_gains: [number, number],    // [red_gain, blue_gain]
+    exposure_time: number | null,     // microseconds
+    analogue_gain: number | null,
+    settle_time_s: number
+  },
+  error?: string
+}
+```
+
 ### `add_goal_color_range`
 
 Add a new HSV range for goal color detection.

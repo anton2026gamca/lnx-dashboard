@@ -16,7 +16,7 @@ interface BallColorCalibrationModalProps {
 
 export const BallColorCalibrationModal: React.FC<BallColorCalibrationModalProps> = ({ onClose }) => {
   const [regions, setRegions] = useState<DrawRegion[]>([]);
-  const [camera, setCamera] = useState<VideoCamera>('front');
+  const [camera, setCamera] = useState<VideoCamera>('both');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 

@@ -6,7 +6,7 @@ import { io, Socket } from 'socket.io-client';
 import { RobotConnection, RobotMode, SensorData, MotorSettings, GoalSettings, AutonomousSettings, LogsBatch, DetectedObject, PositionEstimate, GoalDetectionData, BluetoothState, BluetoothDevice, OtherRobotInfo, BluetoothMessage, BluetoothPairableDevice } from '@/types/robot';
 
 export type VideoCamera = 'front' | 'back' | 'both';
-type SingleVideoCamera = Exclude<VideoCamera, 'both'>;
+export type SingleVideoCamera = Exclude<VideoCamera, 'both'>;
 
 export class RobotAPIClient {
   private socket: Socket | null = null;
@@ -612,6 +612,25 @@ export class RobotAPIClient {
     max_values?: number[];
   } | null> {
     return this._emit('get_line_calibration_status', {}, robotId);
+  }
+
+  /**
+   * Run automatic camera calibration (AWB/AE settle and lock) for one cameras, then copy calibrated values to other cameras.
+   */
+  async cameraAutoCalibration(
+    camera: SingleVideoCamera = 'front',
+    settleTimeS: number = 2.0,
+    robotId?: string,
+  ): Promise<{
+    camera?: SingleVideoCamera;
+    result?: {
+      color_gains: [number, number];
+      exposure_time: number | null;
+      analogue_gain: number | null;
+      settle_time_s: number;
+    };
+  } | null> {
+    return this._emit('camera_auto_calibration', { camera, settle_time_s: settleTimeS }, robotId);
   }
 
   /**

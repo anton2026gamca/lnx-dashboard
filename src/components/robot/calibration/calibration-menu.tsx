@@ -13,6 +13,7 @@ import { BallColorCalibrationModal } from './subsystems/ball-color-calibration-m
 import { BallDistanceCalibrationModal } from './subsystems/ball-distance-calibration-modal';
 import { GoalDistanceCalibrationModal } from './subsystems/goal-distance-calibration-modal';
 import { ResetCompassModal } from './subsystems/reset-compass-modal';
+import { CameraAutoCalibrationModal } from './subsystems/camera-auto-calibration-modal';
 import { useMotorSettings, useRobotMode } from '@/hooks/useRobot';
 import { useVideoStreamRefresh } from '@/context/VideoStreamContext';
 
@@ -21,7 +22,7 @@ interface CalibrationMenuProps {
   onClose: () => void;
 }
 
-type ActiveModal = null | 'line' | 'goalColors' | 'ballColor' | 'ballDistance' | 'goalDistance' | 'resetCompass';
+type ActiveModal = null | 'line' | 'goalColors' | 'ballColor' | 'ballDistance' | 'goalDistance' | 'resetCompass' | 'cameraAuto';
 
 export const CalibrationMenu: React.FC<CalibrationMenuProps> = ({ isOpen, onClose }) => {
   const [activeModal, setActiveModal] = useState<ActiveModal>(null);
@@ -124,6 +125,19 @@ export const CalibrationMenu: React.FC<CalibrationMenuProps> = ({ isOpen, onClos
 
           {/* Orientation */}
           <div className="space-y-2">
+            <h3 className="text-xs font-bold text-main-900 dark:text-main-100 px-1">Camera</h3>
+            <div className="space-y-1 pt-2 border-t-2 border-main-300 dark:border-main-700">
+              <Button
+                onClick={() => handleSubsystemOpen('cameraAuto')}
+                className="w-full text-center text-xs"
+              >
+                Camera Auto Calibration
+              </Button>
+            </div>
+          </div>
+
+          {/* Orientation */}
+          <div className="space-y-2">
             <h3 className="text-xs font-bold text-main-900 dark:text-main-100 px-1">Orientation</h3>
             <div className="space-y-1 pt-2 border-t-2 border-main-300 dark:border-main-700">
               <Button
@@ -154,6 +168,9 @@ export const CalibrationMenu: React.FC<CalibrationMenuProps> = ({ isOpen, onClos
           )}
           {activeModal === 'resetCompass' && (
             <ResetCompassModal onClose={handleSubsystemClose} />
+          )}
+          {activeModal === 'cameraAuto' && (
+            <CameraAutoCalibrationModal onClose={handleSubsystemClose} />
           )}
           <div className="mt-4 pt-3 border-t border-main-300 dark:border-main-800">
             <Button

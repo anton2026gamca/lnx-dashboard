@@ -17,7 +17,7 @@ interface GoalColorCalibrationModalProps {
 
 export const GoalColorCalibrationModal: React.FC<GoalColorCalibrationModalProps> = ({ onClose }) => {
   const [selectedColor, setSelectedColor] = useState<'yellow' | 'blue' | null>(null);
-  const [camera, setCamera] = useState<VideoCamera>('front');
+  const [camera, setCamera] = useState<VideoCamera>('both');
   const [regions, setRegions] = useState<{ yellow: DrawRegion[]; blue: DrawRegion[] }>({
     yellow: [],
     blue: [],

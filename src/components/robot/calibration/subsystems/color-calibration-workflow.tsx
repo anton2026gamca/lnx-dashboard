@@ -181,14 +181,17 @@ export const ColorCalibrationWorkflow: React.FC<ColorCalibrationWorkflowProps> =
   return (
     <div className="space-y-2">
       <h3 className="text-sm font-bold text-main-900 dark:text-white">{title}</h3>
-      <div className="flex gap-1">
-        <Button onClick={() => onCameraChange('front')} active={camera === 'front'} className="flex-1 text-xs">Front</Button>
-        <Button onClick={() => onCameraChange('back')} active={camera === 'back'} className="flex-1 text-xs">Back</Button>
-        <Button onClick={() => onCameraChange('both')} active={camera === 'both'} className="flex-1 text-xs">Both</Button>
-      </div>
 
       {step === 'regions' ? (
         <>
+          <div className="bg-main-200 dark:bg-main-900 border border-main-300 dark:border-main-800 p-2">
+            <h3 className="text-xs font-bold text-main-900 dark:text-white uppercase mb-2">Camera to calibrate</h3>
+            <div className="flex gap-1">
+              <Button onClick={() => onCameraChange('front')} active={camera === 'front'} className="flex-1 text-xs">Front</Button>
+              <Button onClick={() => onCameraChange('back')} active={camera === 'back'} className="flex-1 text-xs">Back</Button>
+              <Button onClick={() => onCameraChange('both')} active={camera === 'both'} className="flex-1 text-xs">Both</Button>
+            </div>
+          </div>
           <div className="space-y-2">
             <ModeComponent hideAutonomous />
             <SettingsComponent hideAutonomous hideTabBar />

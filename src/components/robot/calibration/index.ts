@@ -12,3 +12,4 @@ export { BallColorCalibrationModal } from './subsystems/ball-color-calibration-m
 export { BallDistanceCalibrationModal as CameraBallDistanceCalibrationModal } from './subsystems/ball-distance-calibration-modal';
 export { GoalDistanceCalibrationModal } from './subsystems/goal-distance-calibration-modal';
 export { ResetCompassModal } from './subsystems/reset-compass-modal';
+export { CameraAutoCalibrationModal } from './subsystems/camera-auto-calibration-modal';
