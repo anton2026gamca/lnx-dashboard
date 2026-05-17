@@ -537,11 +537,17 @@ Get current line calibration status.
 ```typescript
 {
   status: "ok",
-  phase: number,              // 0 = idle, 1 = phase 1, 2 = phase 2
-  line_sensor_count: number,
-  min_values: number[],
-  max_values: number[],
-  thresholds: [[number, number], ...]
+  active: boolean,                         // true when calibration is running
+  phase: number,                           // 0 = idle, 1 = phase 1, 2 = phase 2
+  current_thresholds: Array<[number, number]>,
+  calibration_min: Array<number | null> | null,   // current phase min values
+  calibration_max: Array<number | null> | null,   // current phase max values
+  phase1_complete: boolean,
+  phase1_min: Array<number | null> | null,
+  phase1_max: Array<number | null> | null,
+  phase2_complete: boolean,
+  phase2_min: Array<number | null> | null,
+  phase2_max: Array<number | null> | null
 }
 ```
 

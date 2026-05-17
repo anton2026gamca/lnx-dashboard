@@ -24,11 +24,17 @@ export const LineCalibrationModal: React.FC<LineCalibrationModalProps> = ({ onCl
   const [enabledSensors, setEnabledSensors] = useState<boolean[]>([]);
   const [manualData, setManualData] = useState<{
     current_thresholds?: number[][];
-    phase1_min?: number[];
-    phase1_max?: number[];
-    phase2_min?: number[];
-    phase2_max?: number[];
+    phase1_min?: Array<number | null>;
+    phase1_max?: Array<number | null>;
+    phase2_min?: Array<number | null>;
+    phase2_max?: Array<number | null>;
   } | null>(null);
+  const [phaseSnapshots, setPhaseSnapshots] = useState<{
+    phase1_min?: Array<number | null>;
+    phase1_max?: Array<number | null>;
+    phase2_min?: Array<number | null>;
+    phase2_max?: Array<number | null>;
+  }>({});
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [fullscreenVisualization, setFullscreenVisualization] = useState(false);
@@ -47,12 +53,32 @@ export const LineCalibrationModal: React.FC<LineCalibrationModalProps> = ({ onCl
     if (result) {
       setThresholds(result.thresholds || []);
       if (result.can_start_phase2 && currentPhase === 'phase1') {
+        setPhaseSnapshots((prev) => ({
+          ...prev,
+          phase1_min: result.min_values || prev.phase1_min,
+          phase1_max: result.max_values || prev.phase1_max,
+        }));
         setError(null);
         setCurrentPhase('phase2');
         await startPhase(2);
       } else {
+        const nextSnapshots = {
+          ...phaseSnapshots,
+          ...(currentPhase === 'phase2'
+            ? {
+                phase2_min: result.min_values || phaseSnapshots.phase2_min,
+                phase2_max: result.max_values || phaseSnapshots.phase2_max,
+              }
+            : {}),
+        };
+        setPhaseSnapshots(nextSnapshots);
         setCurrentPhase('manual');
-        await loadManualAdjustmentData();
+        await loadManualAdjustmentData({
+          thresholds: result.thresholds,
+          min_values: result.min_values,
+          max_values: result.max_values,
+          phase_snapshots: nextSnapshots,
+        });
       }
     }
     setLoading(false);
@@ -63,19 +89,64 @@ export const LineCalibrationModal: React.FC<LineCalibrationModalProps> = ({ onCl
     await loadManualAdjustmentData();
   };
 
-  const loadManualAdjustmentData = async () => {
+  const loadManualAdjustmentData = async (fallback?: {
+    thresholds?: Array<[number, number]> | number[][];
+    min_values?: Array<number | null>;
+    max_values?: Array<number | null>;
+    phase_snapshots?: {
+      phase1_min?: Array<number | null>;
+      phase1_max?: Array<number | null>;
+      phase2_min?: Array<number | null>;
+      phase2_max?: Array<number | null>;
+    };
+  }) => {
     try {
       const status = await robotClient.getLineCalibrationStatus();
-      if (status) {
-        const currentThresholds = status.thresholds || [];
-        setManualData({
-          current_thresholds: currentThresholds,
-          phase1_min: status.min_values,
-          phase1_max: status.max_values,
-        });
+      const sensorData = await robotClient.getSensorData();
+      const liveThresholds = status?.thresholds?.length
+        ? status.thresholds
+        : (status?.current_thresholds || []);
+      const sensorThresholds = sensorData?.line?.thresholds || [];
+      const fallbackThresholds = fallback?.thresholds || [];
+      const currentThresholds = liveThresholds.length > 0
+        ? liveThresholds
+        : sensorThresholds.length > 0
+          ? sensorThresholds
+          : fallbackThresholds;
+
+      const phase1Min = status?.phase1_min?.length
+        ? status.phase1_min
+        : (status?.min_values?.length ? status.min_values : fallback?.min_values);
+      const phase1Max = status?.phase1_max?.length
+        ? status.phase1_max
+        : (status?.max_values?.length ? status.max_values : fallback?.max_values);
+      const phase2Min = status?.phase2_min?.length ? status.phase2_min : undefined;
+      const phase2Max = status?.phase2_max?.length ? status.phase2_max : undefined;
+      const phaseSnapshotsData = fallback?.phase_snapshots || phaseSnapshots;
+
+      setManualData({
+        current_thresholds: currentThresholds,
+        phase1_min: phaseSnapshotsData.phase1_min || phase1Min,
+        phase1_max: phaseSnapshotsData.phase1_max || phase1Max,
+        phase2_min: phaseSnapshotsData.phase2_min || phase2Min,
+        phase2_max: phaseSnapshotsData.phase2_max || phase2Max,
+      });
+
+      if (currentThresholds.length > 0) {
         setThresholds(currentThresholds);
-        setEnabledSensors(new Array(currentThresholds.length).fill(true));
+        setEnabledSensors((prev) => (
+          prev.length === currentThresholds.length
+            ? prev
+            : new Array(currentThresholds.length).fill(true)
+        ));
       }
+
+      setPhaseSnapshots((prev) => ({
+        phase1_min: phaseSnapshotsData.phase1_min || phase1Min || prev.phase1_min,
+        phase1_max: phaseSnapshotsData.phase1_max || phase1Max || prev.phase1_max,
+        phase2_min: phaseSnapshotsData.phase2_min || phase2Min || prev.phase2_min,
+        phase2_max: phaseSnapshotsData.phase2_max || phase2Max || prev.phase2_max,
+      }));
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load calibration data');
     }

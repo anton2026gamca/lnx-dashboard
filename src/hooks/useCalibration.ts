@@ -71,7 +71,7 @@ export const useLineCalibration = () => {
     try {
       const result = await robotClient.getLineCalibrationStatus();
       if (result) {
-        setStatus(result as any);
+        setStatus(result);
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to get status');
@@ -81,9 +81,9 @@ export const useLineCalibration = () => {
   useEffect(() => {
     if (!connectionState.isConnected || !isActive) return;
 
-    const handleStatus = (data: any) => {
-      if (data) {
-        setStatus(data);
+    const handleStatus = (data: unknown) => {
+      if (data && typeof data === 'object') {
+        setStatus(data as LineCalibrationStatus);
       }
     };
 

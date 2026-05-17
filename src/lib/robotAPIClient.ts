@@ -595,11 +595,21 @@ export class RobotAPIClient {
    * Get line calibration status with all detailed information
    */
   async getLineCalibrationStatus(robotId?: string): Promise<{
+    active: boolean;
     phase: number;
-    line_sensor_count: number;
-    min_values: number[];
-    max_values: number[];
-    thresholds: Array<[number, number]>;
+    current_thresholds: Array<[number, number]>;
+    calibration_min: Array<number | null> | null;
+    calibration_max: Array<number | null> | null;
+    phase1_complete: boolean;
+    phase1_min: Array<number | null> | null;
+    phase1_max: Array<number | null> | null;
+    phase2_complete: boolean;
+    phase2_min: Array<number | null> | null;
+    phase2_max: Array<number | null> | null;
+    line_sensor_count?: number;
+    thresholds?: Array<[number, number]>;
+    min_values?: number[];
+    max_values?: number[];
   } | null> {
     return this._emit('get_line_calibration_status', {}, robotId);
   }

@@ -27,14 +27,17 @@ export interface LineCalibrationStatus {
   active?: boolean;
   phase?: number;
   current_thresholds?: number[][];
-  calibration_min?: number[];
-  calibration_max?: number[];
+  calibration_min?: Array<number | null> | null;
+  calibration_max?: Array<number | null> | null;
   phase1_complete?: boolean;
-  phase1_min?: number[];
-  phase1_max?: number[];
+  phase1_min?: Array<number | null> | null;
+  phase1_max?: Array<number | null> | null;
   phase2_complete?: boolean;
-  phase2_min?: number[];
-  phase2_max?: number[];
+  phase2_min?: Array<number | null> | null;
+  phase2_max?: Array<number | null> | null;
+  thresholds?: Array<[number, number]>;
+  min_values?: number[];
+  max_values?: number[];
 }
 
 export interface GoalDistanceCalibrationStatus {
