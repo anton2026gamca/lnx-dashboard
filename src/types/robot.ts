@@ -220,3 +220,62 @@ export interface BluetoothMessage {
   timestamp?: number;
   message_id?: string;
 }
+
+export interface ProfilingStatus {
+  is_collecting: boolean;
+  total_function_events: number;
+  total_lock_events: number;
+  total_processes: number;
+  collection_duration: number;
+}
+
+export interface ProfilingProcessInfo {
+  process_name: string;
+  process_id: number;
+  start_time: number;
+  stop_time: number;
+  function_count: number;
+  lock_events_count: number;
+}
+
+export interface ProfilingFunctionAggregate {
+  count: number;
+  total_time: number;
+  min_time: number;
+  max_time: number;
+  avg_time: number;
+  name: string;
+}
+
+export interface ProfilingLockAggregate {
+  acquire_count: number;
+  total_wait_time: number;
+  max_wait_time: number;
+  contentions: number;
+}
+
+export interface ProfilingReport {
+  metadata: {
+    collection_duration: number;
+    start_time: number;
+    end_time: number;
+    total_function_events: number;
+    total_lock_events: number;
+    total_processes: number;
+    is_collecting: boolean;
+  };
+  processes: Record<string, ProfilingProcessInfo>;
+  functions: {
+    by_name: Record<string, ProfilingFunctionAggregate>;
+    sorted_by_total_time: ProfilingFunctionAggregate[];
+  };
+  locks: {
+    by_name: Record<string, ProfilingLockAggregate>;
+    sorted_by_contention: ProfilingLockAggregate[];
+  };
+  timeline: {
+    processes: Record<string, unknown>[];
+    functions: Record<string, unknown>[];
+    locks: Record<string, unknown>[];
+  };
+}

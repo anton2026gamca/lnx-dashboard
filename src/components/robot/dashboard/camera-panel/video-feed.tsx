@@ -249,7 +249,7 @@ export const VideoFeed: React.FC<{ forceEnabled?: boolean, forceFPS?: number }> 
       />
 
       {!videoEnabled ? (
-        <div className="flex items-center justify-center aspect-video">
+        <div className="flex items-center justify-center p-5">
           <p className="text-main-400">Video Disabled</p>
         </div>
       ) : viewMode === 'both' ? (

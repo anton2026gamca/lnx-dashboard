@@ -3,7 +3,7 @@
  */
 
 import { io, Socket } from 'socket.io-client';
-import { RobotConnection, RobotMode, SensorData, MotorSettings, GoalSettings, AutonomousSettings, LogsBatch, DetectedObject, PositionEstimate, GoalDetectionData, BluetoothState, BluetoothDevice, OtherRobotInfo, BluetoothMessage, BluetoothPairableDevice } from '@/types/robot';
+import { RobotConnection, RobotMode, SensorData, MotorSettings, GoalSettings, AutonomousSettings, LogsBatch, DetectedObject, PositionEstimate, GoalDetectionData, BluetoothState, BluetoothDevice, OtherRobotInfo, BluetoothMessage, BluetoothPairableDevice, ProfilingReport, ProfilingStatus } from '@/types/robot';
 
 export type VideoCamera = 'front' | 'back' | 'both';
 export type SingleVideoCamera = Exclude<VideoCamera, 'both'>;
@@ -244,6 +244,74 @@ export class RobotAPIClient {
    */
   async getLogs(since: number = 0, robotId?: string): Promise<LogsBatch | null> {
     return this._emit('get_logs', { since }, robotId);
+  }
+
+  async profilingStart(robotId?: string): Promise<string | null> {
+    const response = await this._emit<{ message?: string }>('profiling_start', {}, robotId);
+    return response?.message || null;
+  }
+
+  async profilingStop(robotId?: string): Promise<string | null> {
+    const response = await this._emit<{ message?: string }>('profiling_stop', {}, robotId);
+    return response?.message || null;
+  }
+
+  async getProfilingStatus(robotId?: string): Promise<ProfilingStatus | null> {
+    const response = await this._emit<Partial<ProfilingStatus>>('profiling_status', {}, robotId);
+    if (!response) {
+      return null;
+    }
+    return {
+      is_collecting: Boolean(response.is_collecting),
+      total_function_events: Number(response.total_function_events || 0),
+      total_lock_events: Number(response.total_lock_events || 0),
+      total_processes: Number(response.total_processes || 0),
+      collection_duration: Number(response.collection_duration || 0),
+    };
+  }
+
+  async getProfilingReport(includeStackTraces: boolean = false, robotId?: string): Promise<ProfilingReport | null> {
+    const response = await this._emit<{ report?: ProfilingReport } | ProfilingReport>('profiling_report', { include_stack_traces: includeStackTraces }, robotId);
+    if (!response) {
+      return null;
+    }
+
+    const wrappedResponse = response as { report?: ProfilingReport };
+    const report = wrappedResponse.report ?? (response as ProfilingReport);
+    if (!report) {
+      return null;
+    }
+
+    return {
+      metadata: {
+        collection_duration: Number(report.metadata?.collection_duration || 0),
+        start_time: Number(report.metadata?.start_time || 0),
+        end_time: Number(report.metadata?.end_time || 0),
+        total_function_events: Number(report.metadata?.total_function_events || 0),
+        total_lock_events: Number(report.metadata?.total_lock_events || 0),
+        total_processes: Number(report.metadata?.total_processes || 0),
+        is_collecting: Boolean(report.metadata?.is_collecting),
+      },
+      processes: report.processes || {},
+      functions: {
+        by_name: report.functions?.by_name || {},
+        sorted_by_total_time: Array.isArray(report.functions?.sorted_by_total_time) ? report.functions.sorted_by_total_time : [],
+      },
+      locks: {
+        by_name: report.locks?.by_name || {},
+        sorted_by_contention: Array.isArray(report.locks?.sorted_by_contention) ? report.locks.sorted_by_contention : [],
+      },
+      timeline: {
+        processes: Array.isArray(report.timeline?.processes) ? report.timeline.processes : [],
+        functions: Array.isArray(report.timeline?.functions) ? report.timeline.functions : [],
+        locks: Array.isArray(report.timeline?.locks) ? report.timeline.locks : [],
+      },
+    };
+  }
+
+  async profilingClear(robotId?: string): Promise<string | null> {
+    const response = await this._emit<{ message?: string }>('profiling_clear', {}, robotId);
+    return response?.message || null;
   }
 
   /**

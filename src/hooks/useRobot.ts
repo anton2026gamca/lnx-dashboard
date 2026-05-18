@@ -8,7 +8,7 @@ import { useEffect, useCallback, useRef, useState } from 'react';
 import { robotClient } from '@/lib/robotAPIClient';
 import type { VideoCamera } from '@/lib/robotAPIClient';
 import { useRobot } from '@/context/RobotContext';
-import { SensorData, RobotMode, LogEntry, LogsBatch, PositionEstimate, MotorSettings, AutonomousSettings, GoalDetectionData, BluetoothState, BluetoothMessage, BluetoothPairableDevice } from '@/types/robot';
+import { SensorData, RobotMode, LogEntry, LogsBatch, PositionEstimate, MotorSettings, AutonomousSettings, GoalDetectionData, BluetoothState, BluetoothMessage, BluetoothPairableDevice, ProfilingReport, ProfilingStatus } from '@/types/robot';
 
 /**
  * Hook to fetch sensor data periodically
@@ -417,6 +417,189 @@ export const useLogs = () => {
 
   return { logs, setLogs, fetchLogs };
 }
+
+export const useProfiling = () => {
+  const { connectionState } = useRobot();
+  const [statusByRobotId, setStatusByRobotId] = useState<Record<string, ProfilingStatus | null>>({});
+  const [reportByRobotId, setReportByRobotId] = useState<Record<string, ProfilingReport | null>>({});
+  const [loading, setLoading] = useState(false);
+  const [working, setWorking] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const activeRobotId = connectionState.activeRobotId || undefined;
+  const status = activeRobotId ? statusByRobotId[activeRobotId] || null : null;
+  const report = activeRobotId ? reportByRobotId[activeRobotId] || null : null;
+
+  const setStatus = useCallback((robotId: string, nextStatus: ProfilingStatus | null) => {
+    setStatusByRobotId(prev => ({ ...prev, [robotId]: nextStatus }));
+  }, []);
+
+  const setReport = useCallback((robotId: string, nextReport: ProfilingReport | null) => {
+    setReportByRobotId(prev => ({ ...prev, [robotId]: nextReport }));
+  }, []);
+
+  const mergeTimelineEvents = useCallback((previousItems: Record<string, unknown>[], nextItems: Record<string, unknown>[]) => {
+    const merged: Record<string, unknown>[] = [];
+    const seen = new Set<string>();
+    [...previousItems, ...nextItems].forEach((item) => {
+      const key = JSON.stringify(item);
+      if (!seen.has(key)) {
+        seen.add(key);
+        merged.push(item);
+      }
+    });
+    return merged;
+  }, []);
+
+  const mergeReportWithPrevious = useCallback((previousReport: ProfilingReport | null, nextReport: ProfilingReport) => {
+    if (!previousReport) {
+      return nextReport;
+    }
+    return {
+      metadata: nextReport.metadata,
+      processes: {
+        ...previousReport.processes,
+        ...nextReport.processes,
+      },
+      functions: {
+        by_name: {
+          ...previousReport.functions.by_name,
+          ...nextReport.functions.by_name,
+        },
+        sorted_by_total_time: nextReport.functions.sorted_by_total_time.length > 0
+          ? nextReport.functions.sorted_by_total_time
+          : previousReport.functions.sorted_by_total_time,
+      },
+      locks: {
+        by_name: {
+          ...previousReport.locks.by_name,
+          ...nextReport.locks.by_name,
+        },
+        sorted_by_contention: nextReport.locks.sorted_by_contention.length > 0
+          ? nextReport.locks.sorted_by_contention
+          : previousReport.locks.sorted_by_contention,
+      },
+      timeline: {
+        processes: mergeTimelineEvents(previousReport.timeline.processes, nextReport.timeline.processes),
+        functions: mergeTimelineEvents(previousReport.timeline.functions, nextReport.timeline.functions),
+        locks: mergeTimelineEvents(previousReport.timeline.locks, nextReport.timeline.locks),
+      },
+    };
+  }, [mergeTimelineEvents]);
+
+  const fetchStatus = useCallback(async () => {
+    if (!connectionState.isConnected || !activeRobotId) {
+      return null;
+    }
+
+    try {
+      setLoading(true);
+      const nextStatus = await robotClient.getProfilingStatus(activeRobotId);
+      setStatus(activeRobotId, nextStatus);
+      setError(null);
+      return nextStatus;
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to fetch profiling status');
+      return null;
+    } finally {
+      setLoading(false);
+    }
+  }, [activeRobotId, connectionState.isConnected, setStatus]);
+
+  const fetchReport = useCallback(async (includeStackTraces: boolean = false) => {
+    if (!connectionState.isConnected || !activeRobotId) {
+      return null;
+    }
+
+    try {
+      setLoading(true);
+      const nextReport = await robotClient.getProfilingReport(includeStackTraces, activeRobotId);
+      if (nextReport) {
+        setReportByRobotId((previous) => {
+          const previousReport = previous[activeRobotId] || null;
+          return {
+            ...previous,
+            [activeRobotId]: mergeReportWithPrevious(previousReport, nextReport),
+          };
+        });
+      }
+      setError(null);
+      return nextReport;
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to fetch profiling report');
+      return null;
+    } finally {
+      setLoading(false);
+    }
+  }, [activeRobotId, connectionState.isConnected, mergeReportWithPrevious]);
+
+  const runControl = useCallback(async (action: () => Promise<void>) => {
+    try {
+      setWorking(true);
+      setError(null);
+      await action();
+      await fetchStatus();
+      await fetchReport(false);
+      return true;
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Profiling operation failed');
+      return false;
+    } finally {
+      setWorking(false);
+    }
+  }, [fetchReport, fetchStatus]);
+
+  const startProfiling = useCallback(async () => {
+    if (!activeRobotId) {
+      return false;
+    }
+    setReport(activeRobotId, null);
+    return runControl(async () => {
+      await robotClient.profilingStart(activeRobotId);
+    });
+  }, [activeRobotId, runControl, setReport]);
+
+  const stopProfiling = useCallback(async () => {
+    if (!activeRobotId) {
+      return false;
+    }
+    return runControl(async () => {
+      await robotClient.profilingStop(activeRobotId);
+    });
+  }, [activeRobotId, runControl, setReport]);
+
+  const clearProfiling = useCallback(async () => {
+    if (!activeRobotId) {
+      return false;
+    }
+    setReport(activeRobotId, null);
+    return runControl(async () => {
+      await robotClient.profilingClear(activeRobotId);
+    });
+  }, [activeRobotId, runControl]);
+
+  useEffect(() => {
+    if (!connectionState.isConnected || !activeRobotId) {
+      return;
+    }
+
+    void fetchStatus();
+    void fetchReport(false);
+  }, [activeRobotId, connectionState.isConnected, fetchReport, fetchStatus]);
+
+  return {
+    status,
+    report,
+    loading,
+    working,
+    error,
+    fetchStatus,
+    fetchReport,
+    startProfiling,
+    stopProfiling,
+    clearProfiling,
+  };
+};
 
 /**
   * Hook to manage motor settings

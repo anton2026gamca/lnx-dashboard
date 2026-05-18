@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { useLogs } from "@/hooks/useRobot";
 import { Button } from "@/components/ui/button";
 import { LogEntry } from "@/types/robot";
+import { ProfilingPanel } from "@/components/robot/dashboard/profiling-panel";
 
 
 const parseLogMessage = (message: string): { text: string; color: string } => {
@@ -36,6 +37,7 @@ export const LogPanel: React.FC = () => {
   const { logs, setLogs, fetchLogs } = useLogs();
 
   const scrollRef = useRef<HTMLDivElement>(null);
+  const [panelMode, setPanelMode] = useState<'logs' | 'profiling'>('logs');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedLevels, setSelectedLevels] = useState<Set<string>>(new Set(['info', 'warning', 'error', 'critical']));
   const [autoScroll, setAutoScroll] = useState(true);
@@ -102,63 +104,79 @@ export const LogPanel: React.FC = () => {
     if (autoScroll && scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
-  }, [filteredLogs, autoScroll]);
+  }, [filteredLogs, autoScroll, panelMode]);
 
   return (
     <div className="flex flex-col h-full bg-main-200 dark:bg-main-950">
       <div className="text-xs font-bold text-main-900 dark:text-white uppercase px-3 py-1 border-b border-main-400 dark:border-main-800 flex-shrink-0 flex items-center justify-between gap-5">
-        <span>Logs ({filteredLogs.length} / {logs.length})</span>
-        <input
-          type="text"
-          placeholder="Search logs..."
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          className="flex-1 px-1 text-xs bg-main-100 dark:bg-main-800 text-main-900 dark:text-white border border-main-400 dark:border-main-700 focus:outline-none focus:border-blue-500"
-        />
-        <div className="flex gap-1">
-          {Object.entries(levelButtonMap).map(([level, activeClass], i) => (
-            <Button key={i}
-              active={selectedLevels.has(level)}
-              activeClass={activeClass}
-              onClick={() => toggleLevel(level)}
-            >{level.toUpperCase()}</Button>
-          ))}
+        <div className="flex items-center gap-1">
+          <Button active={panelMode === 'logs'} onClick={() => setPanelMode('logs')}>Logs</Button>
+          <Button active={panelMode === 'profiling'} onClick={() => setPanelMode('profiling')}>Profiling</Button>
         </div>
-        <div className="flex gap-1 text-xs">
-          <Button onClick={() => setAutoScroll(!autoScroll)} active={autoScroll}>Auto-scroll</Button>
-          <Button onClick={() => exportLogs()}>Export All</Button>
-          <Button onClick={async () => setLogs(await fetchLogs() || [])}>Load All</Button>
-          <Button onClick={() => setLogs([])}>Clear</Button>
-        </div>
-      </div>
-      
-      <div
-        ref={scrollRef}
-        className="flex-1 overflow-y-auto font-mono text-xs space-y-0.5 p-2"
-      >
-        {filteredLogs.length === 0 ? (
-          <div className="text-main-600 text-center py-2">
-            {logs.length === 0 ? 'No logs yet' : 'No logs matching filters'}
-          </div>
+        {panelMode === 'logs' ? (
+          <>
+            <span>Logs ({filteredLogs.length} / {logs.length})</span>
+            <input
+              type="text"
+              placeholder="Search logs..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="flex-1 px-1 text-xs bg-main-100 dark:bg-main-800 text-main-900 dark:text-white border border-main-400 dark:border-main-700 focus:outline-none focus:border-blue-500"
+            />
+            <div className="flex gap-1">
+              {Object.entries(levelButtonMap).map(([level, activeClass], i) => (
+                <Button key={i}
+                  active={selectedLevels.has(level)}
+                  activeClass={activeClass}
+                  onClick={() => toggleLevel(level)}
+                >{level.toUpperCase()}</Button>
+              ))}
+            </div>
+            <div className="flex gap-1 text-xs">
+              <Button onClick={() => setAutoScroll(!autoScroll)} active={autoScroll}>Auto-scroll</Button>
+              <Button onClick={() => exportLogs()}>Export All</Button>
+              <Button onClick={async () => setLogs(await fetchLogs() || [])}>Load All</Button>
+              <Button onClick={() => setLogs([])}>Clear</Button>
+            </div>
+          </>
         ) : (
-          filteredLogs.map((log, idx) => {
-            const { text, color } = parseLogMessage(log.message || '');
-            const timestamp = log.time ? `${new Date(log.time * 1000).toLocaleTimeString('en-GB', { hour12: false })}` : '';
-            const level = (log.level.toLowerCase() || 'info') as string;
-            const levelColor = levelColorMap[level] || 'text-main-800 dark:text-white';
-            const logger = `[${log.logger}]` || '';
-            
-            return (
-              <div key={idx} className="flex gap-2 text-main-900 dark:text-white">
-                <span className="flex-shrink-0">{timestamp}</span>
-                <span className="flex-shrink-0 flex gap-1">[<span className={`${levelColor} font-bold`}>{level.toUpperCase()}</span>]</span>
-                <span className="flex-shrink-0">{logger}:</span>
-                <span className={`flex-1 whitespace-pre-wrap ${color}`}>{text}</span>
-              </div>
-            );
-          })
+          <span className="text-main-700 dark:text-main-300">Profiling timeline by process, locks, and functions</span>
         )}
       </div>
+
+      {panelMode === 'logs' ? (
+        <div
+          ref={scrollRef}
+          className="flex-1 overflow-y-auto font-mono text-xs space-y-0.5 p-2"
+        >
+          {filteredLogs.length === 0 ? (
+            <div className="text-main-600 text-center py-2">
+              {logs.length === 0 ? 'No logs yet' : 'No logs matching filters'}
+            </div>
+          ) : (
+            filteredLogs.map((log, idx) => {
+              const { text, color } = parseLogMessage(log.message || '');
+              const timestamp = log.time ? `${new Date(log.time * 1000).toLocaleTimeString('en-GB', { hour12: false })}` : '';
+              const level = (log.level.toLowerCase() || 'info') as string;
+              const levelColor = levelColorMap[level] || 'text-main-800 dark:text-white';
+              const logger = `[${log.logger}]` || '';
+              
+              return (
+                <div key={idx} className="flex gap-2 text-main-900 dark:text-white">
+                  <span className="flex-shrink-0">{timestamp}</span>
+                  <span className="flex-shrink-0 flex gap-1">[<span className={`${levelColor} font-bold`}>{level.toUpperCase()}</span>]</span>
+                  <span className="flex-shrink-0">{logger}:</span>
+                  <span className={`flex-1 whitespace-pre-wrap ${color}`}>{text}</span>
+                </div>
+              );
+            })
+          )}
+        </div>
+      ) : (
+        <div className="flex-1 min-h-0">
+          <ProfilingPanel />
+        </div>
+      )}
     </div>
   );
 };
