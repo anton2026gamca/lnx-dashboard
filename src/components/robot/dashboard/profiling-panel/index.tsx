@@ -24,6 +24,7 @@ const FUNCTION_COLORS = [
   'bg-sky-800', 'bg-indigo-800', 'bg-purple-800', 'bg-blue-800',
   'bg-fuchsia-800', 'bg-cyan-800', 'bg-rose-800', 'bg-violet-800',
 ];
+const FUNCTION_SLEEP_COLORS = ['dark:bg-white/10 bg-black/10'];
 const HOVER_PADDING_PX = 6;
 const TIMELINE_PADDING_S = 0.1;
 const PROCESS_LABEL_WIDTH = 209;
@@ -203,7 +204,7 @@ const VirtualRow = React.memo(function VirtualRow({
           const width = Math.max((event.duration / timelineDuration) * chartWidth, 2);
           const laneIndex = layout?.laneByEventId[event.id] ?? 0;
           const top = ROW_VERTICAL_PADDING + laneIndex * (EVENT_BAR_HEIGHT + EVENT_LANE_GAP);
-          const colorPalette = event.type === 'lock' ? LOCK_COLORS : FUNCTION_COLORS;
+          const colorPalette = event.type === 'lock' ? LOCK_COLORS : (event.name.toLowerCase().includes("sleep") ? FUNCTION_SLEEP_COLORS : FUNCTION_COLORS);
           const colorClass = colorPalette[hashString(event.name) % colorPalette.length];
           const isHovered = hoveredEventId === event.id;
           const isHighlighted = highlightedIds.has(event.id);
