@@ -38,7 +38,7 @@ export const SensorPanel: React.FC = () => {
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-2">
         <CompassCard fdata={formattedData} />
         <LineSensorsCard data={sensorData} fdata={formattedData} />
-        <GoalDetectionCard fdata={formattedData} targetGoal={targetGoal} />
+        <GoalDetectionCard fdata={formattedData} targetGoal={targetGoal} goalDetection={goalDetection} />
         <BallDetectionCard data={sensorData} fdata={formattedData} />
         <MotorsCard data={sensorData} fdata={formattedData} />
         <FieldCard className='col-span-2 row-span-2' data={sensorData} fdata={formattedData} targetGoal={targetGoal} position={position} />
@@ -47,4 +47,3 @@ export const SensorPanel: React.FC = () => {
     </div>
   );
 }
-

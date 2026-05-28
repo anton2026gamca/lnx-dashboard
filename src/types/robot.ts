@@ -77,6 +77,29 @@ export interface GoalDetectionData {
   goal_area: number;
   distance_mm: number | null;
   goal_height_pixels: number | null;
+  goals_by_color?: {
+    yellow: {
+      goal_detected: boolean;
+      alignment: number;
+      goal_center_x: number | null;
+      goal_area: number;
+      distance_mm: number | null;
+      goal_height_pixels: number | null;
+      camera_yaw_deg?: number;
+    };
+    blue: {
+      goal_detected: boolean;
+      alignment: number;
+      goal_center_x: number | null;
+      goal_area: number;
+      distance_mm: number | null;
+      goal_height_pixels: number | null;
+      camera_yaw_deg?: number;
+    };
+  };
+  enemy_goal_color?: 'yellow' | 'blue';
+  own_goal_color?: 'yellow' | 'blue';
+  camera_yaw_deg?: number;
 };
 
 export interface FormattedSensorData {

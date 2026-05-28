@@ -4,11 +4,10 @@
 
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { useGoalDistanceCalibration } from '@/hooks/useCalibration';
 import { useVideoStream, useFrameDataUrl } from '@/hooks/useRobot';
-import { useRobotMode } from '@/hooks/useRobot';
 import { ModeComponent } from '@/components/robot/dashboard/control-panel/mode-component';
 import { ManualMovementComponent, SettingsComponent } from '../../dashboard/control-panel';
 import { robotClient } from '@/lib/robotAPIClient';
