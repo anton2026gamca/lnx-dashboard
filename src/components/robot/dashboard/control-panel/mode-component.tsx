@@ -8,12 +8,13 @@ import React, { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { useMotorSettings, useRobotMode } from '@/hooks/useRobot';
 import { robotClient } from '@/lib/robotAPIClient';
-import { RobotMode } from '@/types/robot';
+import { MotorSettings, RobotMode } from '@/types/robot';
 
 export const ModeComponent: React.FC<{hideIdle?: boolean, hideManual?: boolean, hideAutonomous?: boolean}> = ({ hideIdle, hideManual, hideAutonomous }) => {
   const { mode, changeMode, loading } = useRobotMode();
   const [localMode, setLocalMode] = useState<RobotMode>(mode);
-  const { updateSetting } = useMotorSettings();
+  const { settings, updateSetting } = useMotorSettings();
+  const [defaultSettings, setDefaultSettings] = useState<MotorSettings>(settings);
 
   useEffect(() => {
     const handleModeUpdate = (data: any) => {
@@ -37,8 +38,10 @@ export const ModeComponent: React.FC<{hideIdle?: boolean, hideManual?: boolean, 
     setLocalMode(newMode);
     if (newMode === 'autonomous') {
       updateSetting('line_avoiding_enabled', true);
+      updateSetting('position_based_speed_enabled', defaultSettings.position_based_speed_enabled ?? true);
     }
     if (newMode === 'manual') {
+      setDefaultSettings(settings);
       updateSetting('line_avoiding_enabled', false);
       updateSetting('position_based_speed_enabled', false);
     }

@@ -77,7 +77,7 @@ export interface GoalDetectionData {
   goal_area: number;
   distance_mm: number | null;
   goal_height_pixels: number | null;
-  goals_by_color?: {
+  goals_by_color: {
     yellow: {
       goal_detected: boolean;
       alignment: number;
