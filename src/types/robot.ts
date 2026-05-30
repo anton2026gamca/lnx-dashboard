@@ -217,6 +217,7 @@ export interface OtherRobotInfo {
 }
 
 export interface BluetoothState {
+  bluetooth_enabled: boolean;
   process_alive: boolean;
   local_device: {
     device_id?: string;

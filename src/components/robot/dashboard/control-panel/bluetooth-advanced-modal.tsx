@@ -7,6 +7,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Modal } from '@/components/ui/modal';
 import { Button } from '@/components/ui/button';
+import { SettingsToggle } from '@/components/ui/settings-toggle';
 import { useBluetooth } from '@/hooks/useRobot';
 import { useRobot } from '@/context/RobotContext';
 import { BluetoothMessage, BluetoothPairableDevice } from '@/types/robot';
@@ -44,6 +45,7 @@ export const BluetoothAdvancedModal: React.FC<BluetoothAdvancedModalProps> = ({ 
     pairDevice,
     unpairDevice,
     listPairableDevices,
+    setBluetoothEnabled,
     setBluetoothPairingMode,
     sendMessage,
     getMessages,
@@ -233,6 +235,17 @@ export const BluetoothAdvancedModal: React.FC<BluetoothAdvancedModalProps> = ({ 
             }} disabled={working || loading}>Refresh</Button>
           </div>
         </div>
+
+        <SettingsToggle
+          label="Bluetooth Enabled"
+          value={state?.bluetooth_enabled}
+          onChange={(value) => void setBluetoothEnabled(value)}
+          disabled={working || loading || !state}
+          className="px-2"
+          buttonClassName="min-w-24 text-[10px]"
+          onLabel="ENABLED"
+          offLabel="DISABLED"
+        />
 
         <div className={sectionClass}>
           <div className="flex items-center justify-between gap-2">
@@ -472,4 +485,3 @@ export const BluetoothAdvancedModal: React.FC<BluetoothAdvancedModalProps> = ({ 
     </Modal>
   );
 };
-

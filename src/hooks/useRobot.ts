@@ -898,6 +898,14 @@ export const useBluetooth = (interval: number = 3000) => {
     return false;
   }, [activeRobotId, fetchState]);
 
+  const setBluetoothEnabled = useCallback(async (enabled: boolean) => {
+    if (!activeRobotId) return false;
+    return runAction(async () => {
+      const result = await robotClient.setBluetoothEnabled(enabled, activeRobotId);
+      return result?.bluetooth_enabled === enabled;
+    });
+  }, [activeRobotId, runAction]);
+
   const sendMessage = useCallback(async (messageType: string, content: string, macAddress?: string) => {
     if (!activeRobotId) return false;
     const result = await robotClient.bluetoothSendMessage(messageType, content, macAddress, activeRobotId);
@@ -942,6 +950,7 @@ export const useBluetooth = (interval: number = 3000) => {
     pairDevice,
     unpairDevice,
     listPairableDevices,
+    setBluetoothEnabled,
     setBluetoothPairingMode,
     sendMessage,
     getMessages,

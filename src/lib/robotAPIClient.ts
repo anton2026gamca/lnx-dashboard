@@ -414,6 +414,7 @@ export class RobotAPIClient {
 
   async getBluetoothState(robotId?: string): Promise<BluetoothState | null> {
     const response = await this._emit<{
+      bluetooth_enabled?: boolean;
       process_alive?: boolean;
       local_device?: BluetoothState['local_device'];
       connected_devices?: BluetoothDevice[];
@@ -424,12 +425,22 @@ export class RobotAPIClient {
       return null;
     }
     return {
+      bluetooth_enabled: Boolean(response.bluetooth_enabled),
       process_alive: Boolean(response.process_alive),
       local_device: response.local_device || {},
       connected_devices: Array.isArray(response.connected_devices) ? response.connected_devices : [],
       paired_devices: Array.isArray(response.paired_devices) ? response.paired_devices : [],
       other_robot: response.other_robot || {},
     };
+  }
+
+  /**
+   * Enable or disable Bluetooth usage
+   * @param enabled - true to enable Bluetooth, false to disable
+   */
+  async setBluetoothEnabled(enabled: boolean, robotId?: string): Promise<{ bluetooth_enabled?: boolean } | null> {
+    const response = await this._emit<{ bluetooth_enabled?: boolean }>('set_bluetooth_enabled', { enabled }, robotId);
+    return response || null;
   }
 
   async setOtherRobot(
