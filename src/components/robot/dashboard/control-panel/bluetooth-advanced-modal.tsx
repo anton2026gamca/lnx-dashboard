@@ -90,7 +90,7 @@ export const BluetoothAdvancedModal: React.FC<BluetoothAdvancedModalProps> = ({ 
         mac_address: device.mac_address,
         hostname: device.hostname,
         ip_address: device.ip_address,
-        is_connected: Boolean(device.is_connected),
+        is_connected: Boolean(device.connected),
         is_paired: true,
       });
     }
@@ -111,8 +111,10 @@ export const BluetoothAdvancedModal: React.FC<BluetoothAdvancedModalProps> = ({ 
   }, [state]);
 
   const otherConnected = Boolean(
-    selectedOtherMac && state?.connected_devices?.some((d) => d.mac_address === selectedOtherMac && d.is_connected),
+    selectedOtherMac && state?.connected_devices?.some((d) => d.mac_address === selectedOtherMac && d.connected),
   );
+
+  console.log('BluetoothAdvancedModal render', { state, devices, selectedOtherMac, otherConnected });
 
   const mergedMessages = useMemo<DisplayMessage[]>(() => {
     const incoming = messages.received.map((msg) => ({ ...msg, direction: 'in' as const }));

@@ -204,7 +204,7 @@ export interface BluetoothDevice {
   hostname?: string;
   ip_address?: string;
   last_connected?: number;
-  is_connected: boolean;
+  connected: boolean;
   device_id?: string;
 }
 

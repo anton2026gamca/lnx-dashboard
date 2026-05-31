@@ -23,7 +23,7 @@ export const BluetoothMenu: React.FC = () => {
   const hasSelectedOther = Boolean(selectedOtherMac);
 
   const otherRobotConnected = Boolean(
-    selectedOtherMac && state?.connected_devices?.some((device) => device.mac_address === selectedOtherMac && device.is_connected),
+    selectedOtherMac && state?.connected_devices?.some((device) => device.mac_address === selectedOtherMac && device.connected),
   );
   const otherStatus = !selectedOtherMac ? 'not set' : otherRobotConnected ? 'connected' : 'disconnected';
 
