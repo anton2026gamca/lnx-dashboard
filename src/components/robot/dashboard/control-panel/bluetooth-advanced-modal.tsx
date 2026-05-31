@@ -70,6 +70,7 @@ export const BluetoothAdvancedModal: React.FC<BluetoothAdvancedModalProps> = ({ 
   const lastActiveRobotIdRef = useRef<string | null>(connectionState.activeRobotId);
 
   const selectedOtherMac = state?.other_robot?.mac_address || '';
+  const pairedMacs = useMemo(() => new Set((state?.paired_devices || []).map((device) => device.mac_address)), [state?.paired_devices]);
 
   const devices = useMemo(() => {
     const byMac = new Map<
@@ -114,8 +115,6 @@ export const BluetoothAdvancedModal: React.FC<BluetoothAdvancedModalProps> = ({ 
     selectedOtherMac && state?.connected_devices?.some((d) => d.mac_address === selectedOtherMac && d.connected),
   );
 
-  console.log('BluetoothAdvancedModal render', { state, devices, selectedOtherMac, otherConnected });
-
   const mergedMessages = useMemo<DisplayMessage[]>(() => {
     const incoming = messages.received.map((msg) => ({ ...msg, direction: 'in' as const }));
     const outgoing = messages.sent.map((msg) => ({ ...msg, direction: 'out' as const }));
@@ -125,7 +124,9 @@ export const BluetoothAdvancedModal: React.FC<BluetoothAdvancedModalProps> = ({ 
   const runScan = async () => {
     const timeout = Number(scanTimeout);
     const found = await listPairableDevices(Number.isFinite(timeout) && timeout > 0 ? timeout : undefined);
-    const sorted = [...found].sort((a, b) => Number(a.is_paired) - Number(b.is_paired));
+    const sorted = [...found].sort(
+      (a, b) => Number(pairedMacs.has(a.mac_address)) - Number(pairedMacs.has(b.mac_address)),
+    );
     setScanResults(sorted);
   };
 
@@ -272,7 +273,8 @@ export const BluetoothAdvancedModal: React.FC<BluetoothAdvancedModalProps> = ({ 
               <div key={device.mac_address} className="border border-main-300 dark:border-main-700 p-1">
                 <div className="flex items-center justify-between gap-1">
                   <div className="font-medium truncate text-main-900 dark:text-main-100">{device.name || device.mac_address}</div>
-                  {device.is_paired && <span className="text-[10px] border border-main-500 px-1">Paired</span>}
+                  {pairedMacs.has(device.mac_address) && <span className="text-[10px] border border-main-500 px-1">Paired</span>}
+                  {device.connected && <span className="text-[10px] border border-green-600 text-green-700 dark:text-green-400 px-1">Connected</span>}
                 </div>
                 <div className="text-main-500 dark:text-main-400 truncate">{device.mac_address}</div>
                 <div className="flex gap-1 mt-1">

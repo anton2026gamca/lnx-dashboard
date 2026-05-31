@@ -203,9 +203,8 @@ export interface BluetoothDevice {
   mac_address: string;
   hostname?: string;
   ip_address?: string;
-  last_connected?: number;
+  last_seen?: number;
   connected: boolean;
-  device_id?: string;
 }
 
 export interface OtherRobotInfo {
@@ -220,7 +219,7 @@ export interface BluetoothState {
   bluetooth_enabled: boolean;
   process_alive: boolean;
   local_device: {
-    device_id?: string;
+    mac_address?: string;
     hostname?: string;
     ip_address?: string;
   };
@@ -232,7 +231,8 @@ export interface BluetoothState {
 export interface BluetoothPairableDevice {
   name: string;
   mac_address: string;
-  is_paired: boolean;
+  connected: boolean;
+  last_seen?: number;
 }
 
 export interface BluetoothMessage {
