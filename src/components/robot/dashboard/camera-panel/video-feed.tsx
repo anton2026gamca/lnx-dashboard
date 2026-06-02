@@ -143,6 +143,7 @@ const FrameWithOverlay: React.FC<{
         src={frameUrl}
         alt={alt}
         className="w-full h-full object-contain"
+        style={{ imageRendering: 'pixelated' }}
       />
       <canvas
         ref={canvasRef}

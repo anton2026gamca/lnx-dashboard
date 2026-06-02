@@ -450,6 +450,7 @@ export const CameraRegionDrawer: React.FC<CameraRegionDrawerProps> = ({
                   width: '100%',
                   height: 'auto',
                   display: 'block',
+                  imageRendering: 'pixelated'
                 }}
               />
               <CanvasRegionDrawer
