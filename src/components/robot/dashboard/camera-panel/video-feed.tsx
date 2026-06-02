@@ -154,10 +154,10 @@ const FrameWithOverlay: React.FC<{
 };
 
 export const VideoFeed: React.FC<{ forceEnabled?: boolean, forceFPS?: number }> = ({ forceEnabled = false, forceFPS = undefined }) => {
-  const [videoEnabled, setVideoEnabledState] = useState(true);
-  const [fps, setFpsState] = useState(forceFPS !== undefined ? forceFPS : 5);
-  const [viewMode, setViewMode] = useState<'single' | 'both'>('single');
-  const [singleCamera, setSingleCamera] = useState<'front' | 'back'>('front');
+  const [videoEnabled, setVideoEnabledState] = useState(localStorage.getItem('videoFeedEnabled') !== 'false');
+  const [fps, setFpsState] = useState(forceFPS !== undefined ? forceFPS : (localStorage.getItem('videoFeedFPS') ? parseInt(localStorage.getItem('videoFeedFPS') as string, 10) : 5));
+  const [viewMode, setViewMode] = useState<'single' | 'both'>(localStorage.getItem('videoFeedViewMode') === 'both' ? 'both' : 'single');
+  const [singleCamera, setSingleCamera] = useState<'front' | 'back'>(localStorage.getItem('videoFeedSingleCamera') === 'back' ? 'back' : 'front');
   const [frontDetections, setFrontDetections] = useState<DetectedObject[]>([]);
   const [backDetections, setBackDetections] = useState<DetectedObject[]>([]);
   const { videoRefreshKey } = useVideoStreamRefresh();
@@ -177,14 +177,26 @@ export const VideoFeed: React.FC<{ forceEnabled?: boolean, forceFPS?: number }> 
   const setVideoEnabled = (val: boolean) => {
     if (forceEnabled !== true) {
       setVideoEnabledState(val);
+      localStorage.setItem('videoFeedEnabled', val.toString());
     }
   };
 
   const setFps = (val: number) => {
     if (forceFPS === undefined) {
       setFpsState(val);
+      localStorage.setItem('videoFeedFPS', val.toString());
     }
   };
+
+  const handleSetViewMode = (mode: 'single' | 'both') => {
+    setViewMode(mode);
+    localStorage.setItem('videoFeedViewMode', mode);
+  }
+
+  const handleSetSingleCamera = (camera: 'front' | 'back') => {
+    setSingleCamera(camera);
+    localStorage.setItem('videoFeedSingleCamera', camera);
+  }
 
   const activeCamera = viewMode === 'both' ? 'both' : singleCamera;
   const { frame, frontFrame, backFrame, refresh } = useVideoStream(videoEnabled, fps, false, activeCamera);
@@ -241,9 +253,9 @@ export const VideoFeed: React.FC<{ forceEnabled?: boolean, forceFPS?: number }> 
         setFps={setFps}
         setVideoEnabled={setVideoEnabled}
         viewMode={viewMode}
-        setViewMode={setViewMode}
+        setViewMode={handleSetViewMode}
         singleCamera={singleCamera}
-        setSingleCamera={setSingleCamera}
+        setSingleCamera={handleSetSingleCamera}
         refresh={refresh}
         forceEnabled={forceEnabled}
         forceFPS={forceFPS}

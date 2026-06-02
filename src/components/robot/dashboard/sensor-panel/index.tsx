@@ -14,8 +14,13 @@ import { Button } from "@/components/ui/button";
 
 
 export const SensorPanel: React.FC = () => {
-  const [ups, setUps] = useState(5);
+  const [ups, setUps] = useState(localStorage.getItem('sensorUps') ? parseInt(localStorage.getItem('sensorUps')!) : 5);
   const interval = 1000 / ups
+
+  const handleSetUps = (newUps: number) => {
+    setUps(newUps);
+    localStorage.setItem('sensorUps', newUps.toString());
+  }
 
   const { sensorData, error } = useSensorData(interval);
   const { goalDetection } = useGoalDetection(interval);
@@ -30,10 +35,10 @@ export const SensorPanel: React.FC = () => {
       </div>}
       <div className="flex items-center gap-2">
         <span className="text-sm text-main-500 dark:text-main-400">UPS: </span>
-        <Button className="flex-1 max-h-4 text-sm" active={ups == 2} activeClass="bg-yellow-500 hover:bg-yellow-500 dark:bg-yellow-500 dark:hover:bg-yellow-500 text-black" onClick={() => setUps(2)}>2</Button>
-        <Button className="flex-1 max-h-4 text-sm" active={ups == 5} activeClass="bg-yellow-500 hover:bg-yellow-500 dark:bg-yellow-500 dark:hover:bg-yellow-500 text-black" onClick={() => setUps(5)}>5</Button>
-        <Button className="flex-1 max-h-4 text-sm" active={ups == 10} activeClass="bg-yellow-500 hover:bg-yellow-500 dark:bg-yellow-500 dark:hover:bg-yellow-500 text-black" onClick={() => setUps(10)}>10</Button>
-        <Button className="flex-1 max-h-4 text-sm" active={ups == 20} activeClass="bg-yellow-500 hover:bg-yellow-500 dark:bg-yellow-500 dark:hover:bg-yellow-500 text-black" onClick={() => setUps(20)}>20</Button>
+        <Button className="flex-1 max-h-4 text-sm" active={ups == 2} activeClass="bg-yellow-500 hover:bg-yellow-500 dark:bg-yellow-500 dark:hover:bg-yellow-500 text-black" onClick={() => handleSetUps(2)}>2</Button>
+        <Button className="flex-1 max-h-4 text-sm" active={ups == 5} activeClass="bg-yellow-500 hover:bg-yellow-500 dark:bg-yellow-500 dark:hover:bg-yellow-500 text-black" onClick={() => handleSetUps(5)}>5</Button>
+        <Button className="flex-1 max-h-4 text-sm" active={ups == 10} activeClass="bg-yellow-500 hover:bg-yellow-500 dark:bg-yellow-500 dark:hover:bg-yellow-500 text-black" onClick={() => handleSetUps(10)}>10</Button>
+        <Button className="flex-1 max-h-4 text-sm" active={ups == 20} activeClass="bg-yellow-500 hover:bg-yellow-500 dark:bg-yellow-500 dark:hover:bg-yellow-500 text-black" onClick={() => handleSetUps(20)}>20</Button>
       </div>
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-2">
         <CompassCard fdata={formattedData} />

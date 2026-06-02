@@ -187,11 +187,26 @@ export const LogPanel: React.FC = () => {
   const { logs, setLogs, fetchLogs } = useLogs();
 
   const parentRef = useRef<HTMLDivElement>(null);
-  const [panelMode, setPanelMode] = useState<'logs' | 'profiling'>('logs');
-  const [searchQuery, setSearchQuery] = useState('');
-  const [selectedLevels, setSelectedLevels] = useState<Set<string>>(new Set(['info', 'warning', 'error', 'critical']));
+  const [panelMode, setPanelMode] = useState<'logs' | 'profiling'>(localStorage.getItem('logPanelMode') === 'profiling' ? 'profiling' : 'logs');
+  const [searchQuery, setSearchQuery] = useState(localStorage.getItem('logSearchQuery') || '');
+  const [selectedLevels, setSelectedLevels] = useState<Set<string>>(new Set(JSON.parse(localStorage.getItem('logSelectedLevels') || '["info","warning","error","critical"]')));
   const [autoScroll, setAutoScroll] = useState(true);
   const [exportModalOpen, setExportModalOpen] = useState(false);
+
+  const handleSetPanelMode = (mode: 'logs' | 'profiling') => {
+    setPanelMode(mode);
+    localStorage.setItem('logPanelMode', mode);
+  }
+
+  const handleSetSearchQuery = (query: string) => {
+    setSearchQuery(query);
+    localStorage.setItem('logSearchQuery', query);
+  }
+
+  const handleSetSelectedLevels = (levels: Set<string>) => {
+    setSelectedLevels(levels);
+    localStorage.setItem('logSelectedLevels', JSON.stringify(Array.from(levels)));
+  }
   
   const levelColorMap: Record<string, string> = {
     debug: 'text-blue-500',
@@ -235,7 +250,7 @@ export const LogPanel: React.FC = () => {
     } else {
       newSet.add(level);
     }
-    setSelectedLevels(newSet);
+    handleSetSelectedLevels(newSet);
   };
   
   const handleExport = async (settings: ExportSettings) => {
@@ -319,7 +334,7 @@ export const LogPanel: React.FC = () => {
 
     const handleScroll = () => {
       const { scrollTop, scrollHeight, clientHeight } = container;
-      const isNearBottom = scrollHeight - scrollTop - clientHeight < 10;
+      const isNearBottom = scrollHeight - scrollTop - clientHeight <= 50;
       setAutoScroll(isNearBottom);
     };
 
@@ -337,8 +352,8 @@ export const LogPanel: React.FC = () => {
     <div className="flex flex-col h-full bg-main-200 dark:bg-main-950">
       <div className="text-xs font-bold text-main-900 dark:text-white uppercase px-3 py-1 border-b border-main-400 dark:border-main-800 flex-shrink-0 flex items-center justify-between gap-5">
         <div className="flex items-center gap-1">
-          <Button active={panelMode === 'logs'} onClick={() => setPanelMode('logs')}>Logs</Button>
-          <Button active={panelMode === 'profiling'} onClick={() => setPanelMode('profiling')}>Profiling</Button>
+          <Button active={panelMode === 'logs'} onClick={() => handleSetPanelMode('logs')}>Logs</Button>
+          <Button active={panelMode === 'profiling'} onClick={() => handleSetPanelMode('profiling')}>Profiling</Button>
         </div>
         {panelMode === 'logs' ? (
           <>
@@ -347,7 +362,7 @@ export const LogPanel: React.FC = () => {
               type="text"
               placeholder="Search logs..."
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+              onChange={(e) => handleSetSearchQuery(e.target.value)}
               className="flex-1 px-1 text-xs bg-main-100 dark:bg-main-800 text-main-900 dark:text-white border border-main-400 dark:border-main-700 focus:outline-none focus:border-blue-500"
             />
             <div className="flex gap-1">
