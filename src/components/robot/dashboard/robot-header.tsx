@@ -6,18 +6,18 @@
 
 import React from 'react';
 import { useRobot } from '@/context/RobotContext';
-import { RobotConnection } from '@/types/robot';
 import { getColorForRobot, getColorDotClass, ROBOT_COLORS } from '@/lib/robotColors';
 import { Button } from '@/components/ui/button';
 import { ThemeToggle } from '@/components/ui/theme-toggle';
 import { cn } from '@/lib/utils';
+import { RefreshCw } from 'lucide-react';
 
 interface RobotHeaderProps {
   onAddRobot?: () => void;
 }
 
 export const RobotHeader: React.FC<RobotHeaderProps> = ({ onAddRobot }) => {
-  const { connectionState, disconnectFromRobot, switchActiveRobot } = useRobot();
+  const { connectionState, disconnectFromRobot, connectToRobot, switchActiveRobot } = useRobot();
   const { connectedRobots, activeRobotId } = connectionState;
 
   if (connectedRobots.length === 0) {
@@ -68,6 +68,17 @@ export const RobotHeader: React.FC<RobotHeaderProps> = ({ onAddRobot }) => {
 
         {/* Right side controls */}
         <div className="flex items-center gap-1 shrink-0">
+          <Button
+            className="px-2 py-0.5 text-xs"
+            onClick={() => {
+              if (activeRobot) {
+                disconnectFromRobot(activeRobot.id);
+                connectToRobot(activeRobot);
+              }
+            }}
+          >
+            <RefreshCw size={16} />
+          </Button>
           {onAddRobot && (
             <Button
               onClick={onAddRobot}
