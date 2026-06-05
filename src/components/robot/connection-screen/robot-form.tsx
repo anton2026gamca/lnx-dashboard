@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { RobotConnection, RobotColor } from '@/types/robot';
-import { validateIP, validatePort } from '@/lib/robotUtils'
+import { validatePort } from '@/lib/robotUtils'
 import { Button } from '@/components/ui/button';
 import { getColorForRobot, getColorDotClass, ROBOT_COLORS } from '@/lib/robotColors';
 import { cn } from '@/lib/utils';
@@ -59,11 +59,6 @@ export const RobotForm: React.FC<RobotFormProps> = ({
 
     if (!ip.trim()) {
       setFormError('IP address is required');
-      return false;
-    }
-
-    if (!validateIP(ip)) {
-      setFormError('Invalid IP address format');
       return false;
     }
 
